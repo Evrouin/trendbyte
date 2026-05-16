@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime
 
 from src.analysis import TrendScorer
@@ -12,12 +11,13 @@ from src.collectors.github_collector import GitHubCollector
 from src.collectors.hn_collector import HNCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.config import Config
-from src.database import Database
+from src.gateway import DatabaseGateway
+from src.logger import Logger
 from src.models import Mention
 from src.rendering import ImageRenderer
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-logger = logging.getLogger(__name__)
+Logger.setup()
+logger = Logger.get(__name__)
 
 
 def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
@@ -27,15 +27,14 @@ def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
         try:
             mentions.extend(collector.collect())
         except Exception as e:
-            logger.error("Collector failed: %s", e, extra={"source": collector.source_name})
+            logger.error("Collector failed: %s — %s", collector.source_name, e)
     return mentions
 
 
 def run() -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
-
-    db = Database(config.database_url)
+    db = DatabaseGateway(config.database_url)
     db.initialize()
 
     collectors: list[BaseCollector] = [
@@ -60,24 +59,20 @@ def run() -> None:
     logger.info("Starting TrendByte pipeline")
 
     mentions = collect_all(collectors)
-    logger.info("Total mentions collected: %d", len(mentions))
+    logger.info("Total mentions: %d", len(mentions))
 
-    # Store mentions
-    with db.connect() as conn:
-        for m in mentions:
-            conn.execute(
-                "INSERT INTO mentions (source, name, url, description, stars, forks, score) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                (m.source, m.name, m.url, m.description, m.stars, m.forks, m.score),
-            )
-        conn.commit()
+    db.save_mentions(mentions)
 
-    # Score and rank
+    # Score, filter already-posted, and rank
     trends = scorer.score(mentions)
+    recent = db.get_recent_posts(days=3)
+    trends = [t for t in trends if t.name not in recent]
+
     if not trends:
-        logger.warning("No trends found")
+        logger.warning("No new trends to post")
         return
 
+    db.save_trends(trends[:10])
     logger.info("Top trend: %s (score: %.1f)", trends[0].name, trends[0].score)
 
     # Post to Twitter
@@ -85,14 +80,8 @@ def run() -> None:
     post = bot.post_daily_trends(trends, today)
 
     if post:
-        with db.connect() as conn:
-            conn.execute(
-                "INSERT INTO posts (trend_name, tweet_id, tweet_text, image_path) "
-                "VALUES (%s, %s, %s, %s)",
-                (post.trend_name, post.tweet_id, post.tweet_text, post.image_path),
-            )
-            conn.commit()
-        logger.info("Pipeline complete — tweet posted: %s", post.tweet_id)
+        db.save_post(post)
+        logger.info("Pipeline complete — tweet: %s", post.tweet_id)
     else:
         logger.warning("Pipeline complete — no tweet posted")
 

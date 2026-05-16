@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import logging
+from src.logger import Logger
 import time
 from functools import wraps
 from typing import Any, Callable, TypeVar
 
-logger = logging.getLogger(__name__)
+logger = Logger.get(__name__)
 
 F = TypeVar("F", bound=Callable[..., Any])
 

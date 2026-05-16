@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import logging
+from src.logger import Logger
 
 import tweepy
 
 from src.models import Post, Trend
 from src.rendering.image_renderer import ImageRenderer
 
-logger = logging.getLogger(__name__)
+logger = Logger.get(__name__)
 
 
 class TwitterBot:

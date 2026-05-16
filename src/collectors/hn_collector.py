@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import logging
+from src.logger import Logger
 from datetime import datetime, timedelta
 
 import requests
@@ -11,7 +11,7 @@ from src.collectors import BaseCollector
 from src.models import Mention
 from src.utils import RateLimitError, retry
 
-logger = logging.getLogger(__name__)
+logger = Logger.get(__name__)
 
 HN_SEARCH_URL = "https://hn.algolia.com/api/v1/search"
 

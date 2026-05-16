@@ -2,7 +2,7 @@
 name = "trendbyte"
 version = "0.1.0"
 description = "Tech Trend Intelligence Twitter Bot"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
     "tweepy==4.14.0",
     "PyGithub==2.3.0",
@@ -32,7 +32,7 @@ select = ["E", "F", "W", "I", "N", "UP", "S", "B"]
 
 [tool.mypy]
 strict = true
-python_version = "3.10"
+python_version = "3.12"
 
 [tool.isort]
 profile = "black"
