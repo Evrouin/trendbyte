@@ -8,8 +8,10 @@ from datetime import datetime
 from src.analysis import TrendScorer
 from src.bot import TwitterBot
 from src.collectors import BaseCollector
+from src.collectors.devto_collector import DevtoCollector
 from src.collectors.github_collector import GitHubCollector
 from src.collectors.hn_collector import HNCollector
+from src.collectors.lobsters_collector import LobstersCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.config import Config
 from src.gateway import DatabaseGateway
@@ -45,6 +47,8 @@ def run(dry_run: bool = False) -> None:
         GitHubCollector(config.github_token),
         RedditCollector(config.reddit_client_id, config.reddit_client_secret, config.reddit_user_agent),
         HNCollector(),
+        DevtoCollector(),
+        LobstersCollector(),
     ]
 
     scorer = TrendScorer()
