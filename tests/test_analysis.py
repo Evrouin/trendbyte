@@ -42,3 +42,16 @@ def test_multi_source_boosts_score() -> None:
     trends = scorer.score(mentions)
     # Score = total_stars * num_sources = 200 * 2 = 400
     assert trends[0].score == 400
+
+
+def test_dedup_normalizes_names() -> None:
+    scorer = TrendScorer()
+    mentions = [
+        _make_mention("Golang", source="github", stars=100),
+        _make_mention("golang", source="reddit", stars=100),
+        _make_mention("Go", source="hackernews", stars=100),
+    ]
+    trends = scorer.score(mentions)
+    # All three should merge into one trend under "go"
+    assert len(trends) == 1
+    assert trends[0].mentions == 3

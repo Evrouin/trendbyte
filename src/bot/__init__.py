@@ -7,7 +7,7 @@ from src.logger import Logger
 import tweepy
 
 from src.models import Post, Trend
-from src.rendering.image_renderer import ImageRenderer
+from src.rendering import ImageRenderer
 
 logger = Logger.get(__name__)
 

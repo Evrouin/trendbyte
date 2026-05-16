@@ -3,19 +3,21 @@
 from __future__ import annotations
 
 from src.models import Mention, Trend
+from src.normalizer import normalize
 
 
 class TrendScorer:
     """Scores and ranks technologies by mention frequency and velocity."""
 
     def score(self, mentions: list[Mention]) -> list[Trend]:
-        """Aggregate mentions by name and return ranked trends."""
+        """Aggregate mentions by normalized name and return ranked trends."""
         grouped: dict[str, list[Mention]] = {}
         for m in mentions:
-            grouped.setdefault(m.name.lower(), []).append(m)
+            key = normalize(m.name)
+            grouped.setdefault(key, []).append(m)
 
         trends: list[Trend] = []
-        for name, items in grouped.items():
+        for _, items in grouped.items():
             total_stars = sum(m.stars or 0 for m in items)
             sources = list({m.source for m in items})
             best = max(items, key=lambda m: m.score)
