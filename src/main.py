@@ -7,24 +7,43 @@ from datetime import datetime
 
 from src.analysis import TrendScorer
 from src.bot import TwitterBot
+from src.collectors import BaseCollector
 from src.collectors.github_collector import GitHubCollector
+from src.collectors.hn_collector import HNCollector
+from src.collectors.reddit_collector import RedditCollector
 from src.config import Config
 from src.database import Database
+from src.models import Mention
 from src.rendering import ImageRenderer
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 
+def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
+    """Run all collectors and aggregate mentions."""
+    mentions: list[Mention] = []
+    for collector in collectors:
+        try:
+            mentions.extend(collector.collect())
+        except Exception as e:
+            logger.error("Collector failed: %s", e, extra={"source": collector.source_name})
+    return mentions
+
+
 def run() -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
 
-    # Initialize components
     db = Database(config.database_url)
     db.initialize()
 
-    collector = GitHubCollector(config.github_token)
+    collectors: list[BaseCollector] = [
+        GitHubCollector(config.github_token),
+        RedditCollector(config.reddit_client_id, config.reddit_client_secret, config.reddit_user_agent),
+        HNCollector(),
+    ]
+
     scorer = TrendScorer()
     renderer = ImageRenderer()
     bot = TwitterBot(
@@ -38,11 +57,10 @@ def run() -> None:
         renderer=renderer,
     )
 
-    # Pipeline
     logger.info("Starting TrendByte pipeline")
 
-    mentions = collector.collect()
-    logger.info("Collected %d mentions", len(mentions))
+    mentions = collect_all(collectors)
+    logger.info("Total mentions collected: %d", len(mentions))
 
     # Store mentions
     with db.connect() as conn:
@@ -56,6 +74,10 @@ def run() -> None:
 
     # Score and rank
     trends = scorer.score(mentions)
+    if not trends:
+        logger.warning("No trends found")
+        return
+
     logger.info("Top trend: %s (score: %.1f)", trends[0].name, trends[0].score)
 
     # Post to Twitter
