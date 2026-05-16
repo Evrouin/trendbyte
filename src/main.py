@@ -36,8 +36,10 @@ def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
 def run(dry_run: bool = False) -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
-    db = DatabaseGateway(config.database_url)
-    migrate()
+
+    if not dry_run:
+        db = DatabaseGateway(config.database_url)
+        migrate()
 
     collectors: list[BaseCollector] = [
         GitHubCollector(config.github_token),
