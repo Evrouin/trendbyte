@@ -13,6 +13,7 @@ from src.collectors.reddit_collector import RedditCollector
 from src.config import Config
 from src.gateway import DatabaseGateway
 from src.logger import Logger
+from src.migrate import migrate
 from src.models import Mention
 from src.rendering import ImageRenderer
 
@@ -35,7 +36,7 @@ def run() -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
     db = DatabaseGateway(config.database_url)
-    db.initialize()
+    migrate()
 
     collectors: list[BaseCollector] = [
         GitHubCollector(config.github_token),

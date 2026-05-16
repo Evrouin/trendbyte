@@ -1,17 +1,57 @@
-"""Database migration script — creates all tables."""
+"""Migration runner — executes numbered SQL files in order."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import psycopg
 
 from src.config import Config
-from src.gateway import DatabaseGateway
 from src.logger import Logger
 
 Logger.setup()
+logger = Logger.get(__name__)
+
+MIGRATIONS_DIR = Path(__file__).parent.parent / "migrations"
+
+
+def get_applied(conn: psycopg.Connection) -> set[int]:
+    """Get set of already-applied migration versions."""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS schema_migrations ("
+        "version INTEGER PRIMARY KEY, "
+        "name VARCHAR(255) NOT NULL, "
+        "applied_at TIMESTAMPTZ DEFAULT NOW())"
+    )
+    conn.commit()
+    rows = conn.execute("SELECT version FROM schema_migrations").fetchall()
+    return {row[0] for row in rows}
 
 
 def migrate() -> None:
-    """Run database migrations."""
+    """Run all pending migrations in order."""
     config = Config.from_env()
-    db = DatabaseGateway(config.database_url)
-    db.initialize()
+    conn = psycopg.connect(config.database_url)
+
+    applied = get_applied(conn)
+    files = sorted(MIGRATIONS_DIR.glob("*.sql"))
+
+    for f in files:
+        version = int(f.name.split("_")[0])
+        if version in applied:
+            continue
+
+        logger.info("Applying migration: %s", f.name)
+        sql = f.read_text()
+        conn.execute(sql)
+        conn.execute(
+            "INSERT INTO schema_migrations (version, name) VALUES (%s, %s)",
+            (version, f.name),
+        )
+        conn.commit()
+
+    conn.close()
+    logger.info("Migrations complete")
 
 
 if __name__ == "__main__":
