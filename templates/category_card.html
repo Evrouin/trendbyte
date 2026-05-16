@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 675px;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2a3a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 1080px;
+    height: 560px;
+    background: rgba(56, 139, 253, 0.06);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand {
+    font-size: 18px;
+    font-weight: 600;
+    color: #58a6ff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .category-badge {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .category-ai { background: rgba(210, 168, 255, 0.2); color: #d2a8ff; }
+  .category-web { background: rgba(88, 166, 255, 0.2); color: #58a6ff; }
+  .category-devops { background: rgba(63, 185, 80, 0.2); color: #3fb950; }
+  .category-languages { background: rgba(247, 129, 102, 0.2); color: #f78166; }
+  .category-databases { background: rgba(219, 171, 9, 0.2); color: #dbab09; }
+  .category-security { background: rgba(248, 81, 73, 0.2); color: #f85149; }
+
+  .title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #f0f6fc;
+    margin-top: 16px;
+  }
+
+  .items {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(56, 139, 253, 0.05);
+    border-radius: 12px;
+    padding: 16px 24px;
+    border: 1px solid rgba(88, 166, 255, 0.1);
+  }
+
+  .rank {
+    font-size: 24px;
+    font-weight: 800;
+    color: #484f58;
+    width: 40px;
+  }
+
+  .item-info { flex: 1; }
+
+  .item-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: #f0f6fc;
+  }
+
+  .item-desc {
+    font-size: 13px;
+    color: #8b949e;
+    margin-top: 4px;
+  }
+
+  .item-stats {
+    font-size: 13px;
+    color: #8b949e;
+  }
+
+  .item-stats strong { color: #f0f6fc; }
+
+  .footer {
+    font-size: 14px;
+    color: #484f58;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="header">
+        <span class="brand">⚡ TrendByte</span>
+        <span class="category-badge category-{{ category }}">{{ category }}</span>
+      </div>
+      <div class="title">Trending in {{ category | title }}</div>
+    </div>
+
+    <div class="items">
+      {% for item in trends %}
+      <div class="item">
+        <div class="rank">#{{ loop.index }}</div>
+        <div class="item-info">
+          <div class="item-name">{{ item.name }}</div>
+          <div class="item-desc">{{ item.description }}</div>
+        </div>
+        <div class="item-stats">⭐ <strong>{{ item.score }}</strong></div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">@TrendByteBot · {{ date }}</div>
+  </div>
+</body>
+</html>

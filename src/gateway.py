@@ -91,3 +91,22 @@ class DatabaseGateway:
                 (limit,),
             ).fetchall()
         return [dict(row) for row in rows]
+
+    def get_recent_post_ids(self, days: int = 7) -> list[str]:
+        """Get tweet IDs from the last N days."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT tweet_id FROM posts WHERE posted_at > NOW() - INTERVAL '%s days'",
+                (days,),
+            ).fetchall()
+        return [row["tweet_id"] for row in rows]
+
+    def save_analytics(self, metrics) -> None:
+        """Store tweet engagement metrics."""
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO analytics (tweet_id, impressions, likes, retweets, replies) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (metrics.tweet_id, metrics.impressions, metrics.likes, metrics.retweets, metrics.replies),
+            )
+            conn.commit()

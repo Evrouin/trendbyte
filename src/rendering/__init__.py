@@ -27,6 +27,14 @@ class ImageRenderer:
         """Render weekly comparison chart. Returns path to generated PNG."""
         return asyncio.run(self._render("weekly_comparison.html", {"trends": trends, "week": week}, "weekly_comparison.png"))
 
+    def render_category_card(self, category: str, trends: list[dict], date: str) -> str:
+        """Render category-specific card. Returns path to generated PNG."""
+        return asyncio.run(self._render(
+            "category_card.html",
+            {"category": category, "trends": trends, "date": date},
+            f"category_{category}.png",
+        ))
+
     async def _render(self, template_name: str, data: dict, output_name: str) -> str:
         """Render template to PNG."""
         template = self._env.get_template(template_name)
