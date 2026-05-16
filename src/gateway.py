@@ -22,6 +22,10 @@ class DatabaseGateway:
     def _connect(self) -> psycopg.Connection:
         return psycopg.connect(self._url, row_factory=dict_row)
 
+    def connection(self) -> psycopg.Connection:
+        """Return a connection for external use (e.g., categorizer)."""
+        return self._connect()
+
     def save_mentions(self, mentions: list[Mention]) -> int:
         """Insert mentions and return count saved."""
         with self._connect() as conn:

@@ -1,8 +1,13 @@
-"""Technology categorization."""
+"""Technology categorization — DB-backed with dynamic keyword management."""
 
 from __future__ import annotations
 
-CATEGORIES: dict[str, set[str]] = {
+from src.logger import Logger
+
+logger = Logger.get(__name__)
+
+# Default seed data — used to populate DB on first run
+DEFAULT_CATEGORIES: dict[str, set[str]] = {
     "ai": {
         "ai", "ml", "llm", "gpt", "gpt4", "gpt5", "openai", "claude", "gemini",
         "langchain", "ollama", "llama", "mistral", "huggingface", "pytorch",
@@ -34,11 +39,84 @@ CATEGORIES: dict[str, set[str]] = {
 }
 
 
-def categorize(name: str) -> list[str]:
-    """Return list of categories a technology belongs to."""
-    normalized = name.lower().strip()
-    matches = []
-    for category, keywords in CATEGORIES.items():
-        if normalized in keywords:
-            matches.append(category)
-    return matches if matches else ["other"]
+class Categorizer:
+    """DB-backed categorizer with dynamic keyword management."""
+
+    def __init__(self, db_conn=None) -> None:
+        self._conn = db_conn
+        self._cache: dict[str, set[str]] | None = None
+
+    def categorize(self, name: str) -> list[str]:
+        """Return categories for a technology name."""
+        categories = self._get_categories()
+        normalized = name.lower().strip()
+        matches = [cat for cat, keywords in categories.items() if normalized in keywords]
+        return matches if matches else ["other"]
+
+    def add_keyword(self, category: str, keyword: str) -> None:
+        """Add a new keyword to a category."""
+        if not self._conn:
+            return
+        self._conn.execute(
+            "INSERT INTO category_keywords (category_id, keyword) "
+            "SELECT id, %s FROM categories WHERE name = %s "
+            "ON CONFLICT DO NOTHING",
+            (keyword.lower(), category.lower()),
+        )
+        self._conn.commit()
+        self._cache = None  # invalidate
+        logger.info("Added keyword '%s' to category '%s'", keyword, category)
+
+    def add_category(self, name: str, keywords: list[str] | None = None) -> None:
+        """Create a new category, optionally with initial keywords."""
+        if not self._conn:
+            return
+        self._conn.execute(
+            "INSERT INTO categories (name) VALUES (%s) ON CONFLICT DO NOTHING",
+            (name.lower(),),
+        )
+        if keywords:
+            for kw in keywords:
+                self.add_keyword(name, kw)
+        self._conn.commit()
+        self._cache = None
+        logger.info("Created category '%s' with %d keywords", name, len(keywords or []))
+
+    def seed_defaults(self) -> None:
+        """Populate DB with default categories and keywords."""
+        if not self._conn:
+            return
+        for category, keywords in DEFAULT_CATEGORIES.items():
+            self.add_category(category, list(keywords))
+        logger.info("Seeded default categories")
+
+    def _get_categories(self) -> dict[str, set[str]]:
+        """Load categories from DB or fall back to defaults."""
+        if self._cache:
+            return self._cache
+
+        if not self._conn:
+            self._cache = DEFAULT_CATEGORIES
+            return self._cache
+
+        rows = self._conn.execute(
+            "SELECT c.name as category, ck.keyword "
+            "FROM categories c "
+            "LEFT JOIN category_keywords ck ON c.id = ck.category_id"
+        ).fetchall()
+
+        if not rows or all(row["keyword"] is None for row in rows):
+            self._cache = DEFAULT_CATEGORIES
+            return self._cache
+
+        result: dict[str, set[str]] = {}
+        for row in rows:
+            cat = row["category"]
+            kw = row["keyword"]
+            if cat not in result:
+                result[cat] = set()
+            if kw:
+                result[cat].add(kw)
+
+        self._cache = result
+        return self._cache
