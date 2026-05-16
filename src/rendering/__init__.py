@@ -34,7 +34,7 @@ class ImageRenderer:
 
         async with async_playwright() as p:
             browser = await p.chromium.launch()
-            page = await browser.new_page(viewport={"width": 1200, "height": 675})
+            page = await browser.new_page(viewport={"width": 1200, "height": 675}, device_scale_factor=2)
             await page.set_content(html, wait_until="networkidle")
             filepath = str(OUTPUT_DIR / output_name)
             await page.screenshot(path=filepath)
