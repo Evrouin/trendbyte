@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 675px;
+    font-family: 'Inter', sans-serif;
+    background: #0d1117;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 1080px;
+    height: 560px;
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand {
+    font-size: 18px;
+    font-weight: 600;
+    color: #58a6ff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .date {
+    font-size: 16px;
+    color: #8b949e;
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #f0f6fc;
+    margin-top: 16px;
+  }
+
+  .chart-area {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    gap: 32px;
+    padding: 32px 0;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bar-container {
+    width: 100%;
+    height: 280px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .bar {
+    width: 64px;
+    border-radius: 8px 8px 0 0;
+    position: relative;
+  }
+
+  .bar-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f0f6fc;
+  }
+
+  .bar-value {
+    font-size: 12px;
+    color: #8b949e;
+    margin-top: 4px;
+  }
+
+  .bar-1 { background: linear-gradient(180deg, #58a6ff, #1f6feb); }
+  .bar-2 { background: linear-gradient(180deg, #3fb950, #238636); }
+  .bar-3 { background: linear-gradient(180deg, #f78166, #da3633); }
+  .bar-4 { background: linear-gradient(180deg, #d2a8ff, #8957e5); }
+  .bar-5 { background: linear-gradient(180deg, #79c0ff, #388bfd); }
+
+  .legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #8b949e;
+  }
+
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .footer {
+    font-size: 14px;
+    color: #484f58;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="header">
+        <span class="brand">⚡ TrendByte</span>
+        <span class="date">Week of {{ week }}</span>
+      </div>
+      <div class="title">Weekly Tech Comparison</div>
+    </div>
+
+    <div class="chart-area">
+      {% for item in trends %}
+      <div class="bar-group">
+        <div class="bar-container">
+          <div class="bar bar-{{ loop.index }}" style="height: {{ item.height }}%;"></div>
+        </div>
+        <div class="bar-label">{{ item.name }}</div>
+        <div class="bar-value">{{ item.mentions }} mentions</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">@TrendByteBot · Weekly Intelligence Report</div>
+  </div>
+</body>
+</html>

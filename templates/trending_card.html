@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 675px;
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #1c2a3a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .card {
+    width: 1080px;
+    height: 560px;
+    background: rgba(56, 139, 253, 0.06);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(88, 166, 255, 0.15);
+    padding: 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brand {
+    font-size: 18px;
+    font-weight: 600;
+    color: #58a6ff;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .date {
+    font-size: 16px;
+    color: #8b949e;
+  }
+
+  .title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #f0f6fc;
+    margin-top: 16px;
+  }
+
+  .items {
+    display: flex;
+    gap: 24px;
+    flex: 1;
+    align-items: center;
+  }
+
+  .item {
+    flex: 1;
+    background: rgba(56, 139, 253, 0.05);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid rgba(88, 166, 255, 0.1);
+  }
+
+  .rank {
+    font-size: 14px;
+    font-weight: 600;
+    color: #8b949e;
+    margin-bottom: 8px;
+  }
+
+  .item-name {
+    font-size: 22px;
+    font-weight: 800;
+    color: #f0f6fc;
+    margin-bottom: 12px;
+  }
+
+  .stat {
+    font-size: 14px;
+    color: #8b949e;
+    margin-bottom: 4px;
+  }
+
+  .stat strong {
+    color: #f0f6fc;
+  }
+
+  .growth {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 4px 10px;
+    background: rgba(63, 185, 80, 0.3);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #3fb950;
+  }
+
+  .footer {
+    font-size: 14px;
+    color: #484f58;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <div class="header">
+        <span class="brand">⚡ TrendByte</span>
+        <span class="date">{{ date }}</span>
+      </div>
+      <div class="title">Today's Trending Tech</div>
+    </div>
+
+    <div class="items">
+      {% for item in trends %}
+      <div class="item">
+        <div class="rank">#{{ loop.index }}</div>
+        <div class="item-name">{{ item.name }}</div>
+        <div class="stat">⭐ <strong>{{ item.stars }}</strong> stars</div>
+        <div class="stat">🍴 <strong>{{ item.forks }}</strong> forks</div>
+        <div class="growth">↑ {{ item.growth }}% this week</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="footer">@TrendByteBot · Daily Tech Intelligence</div>
+  </div>
+</body>
+</html>
