@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from datetime import datetime
 
 from src.analysis import TrendScorer
@@ -32,7 +33,7 @@ def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
     return mentions
 
 
-def run() -> None:
+def run(dry_run: bool = False) -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
     db = DatabaseGateway(config.database_url)
@@ -46,6 +47,40 @@ def run() -> None:
 
     scorer = TrendScorer()
     renderer = ImageRenderer()
+
+    logger.info("Starting TrendByte pipeline (dry_run=%s)", dry_run)
+
+    mentions = collect_all(collectors)
+    logger.info("Total mentions: %d", len(mentions))
+
+    if not dry_run:
+        db.save_mentions(mentions)
+
+    # Score, filter already-posted, and rank
+    trends = scorer.score(mentions)
+    if not dry_run:
+        recent = db.get_recent_posts(days=3)
+        trends = [t for t in trends if t.name not in recent]
+
+    if not trends:
+        logger.warning("No new trends to post")
+        return
+
+    logger.info("Top trend: %s (score: %.1f)", trends[0].name, trends[0].score)
+
+    if dry_run:
+        logger.info("--- DRY RUN RESULTS ---")
+        for i, t in enumerate(trends[:3], 1):
+            logger.info("#%d %s | score=%.1f | growth=%.1f%% | sources=%s", i, t.name, t.score, t.growth_pct, t.sources)
+        image = renderer.render_trending_card(
+            trends=[{"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct} for t in trends[:3]],
+            date=datetime.utcnow().strftime("%B %d, %Y"),
+        )
+        logger.info("Image generated: %s", image)
+        return
+
+    db.save_trends(trends[:10])
+
     bot = TwitterBot(
         config={
             "api_key": config.twitter_api_key,
@@ -57,26 +92,6 @@ def run() -> None:
         renderer=renderer,
     )
 
-    logger.info("Starting TrendByte pipeline")
-
-    mentions = collect_all(collectors)
-    logger.info("Total mentions: %d", len(mentions))
-
-    db.save_mentions(mentions)
-
-    # Score, filter already-posted, and rank
-    trends = scorer.score(mentions)
-    recent = db.get_recent_posts(days=3)
-    trends = [t for t in trends if t.name not in recent]
-
-    if not trends:
-        logger.warning("No new trends to post")
-        return
-
-    db.save_trends(trends[:10])
-    logger.info("Top trend: %s (score: %.1f)", trends[0].name, trends[0].score)
-
-    # Post to Twitter
     today = datetime.utcnow().strftime("%B %d, %Y")
     post = bot.post_daily_trends(trends, today)
 
@@ -88,4 +103,5 @@ def run() -> None:
 
 
 if __name__ == "__main__":
-    run()
+    dry = "--dry-run" in sys.argv
+    run(dry_run=dry)
