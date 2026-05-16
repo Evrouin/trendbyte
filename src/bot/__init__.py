@@ -73,3 +73,17 @@ class TwitterBot:
             lines.append(f"{i}. {t.name} — ↑{t.growth_pct}% | {t.mentions} mentions")
         lines.append("\n#TrendByte #TechTrends")
         return "\n".join(lines)
+
+    def post_thread(self, tweets: list[str], image_path: str | None = None) -> None:
+        """Post a thread of tweets, first one optionally with an image."""
+        previous_id = None
+        for i, text in enumerate(tweets):
+            kwargs: dict = {"text": text}
+            if previous_id:
+                kwargs["in_reply_to_tweet_id"] = previous_id
+            if i == 0 and image_path:
+                media = self._api.media_upload(image_path)
+                kwargs["media_ids"] = [media.media_id]
+            response = self._client.create_tweet(**kwargs)
+            previous_id = str(response.data["id"])
+            logger.info("Thread tweet posted", extra={"tweet_id": previous_id})

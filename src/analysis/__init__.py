@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from src.analysis.sentiment import average_sentiment
 from src.models import Mention, Trend
 from src.normalizer import normalize
 
@@ -21,13 +22,18 @@ class TrendScorer:
             total_stars = sum(m.stars or 0 for m in items)
             sources = list({m.source for m in items})
             best = max(items, key=lambda m: m.score)
+            sentiment = average_sentiment(items)
+
+            # Boost score: stars * sources * (1 + sentiment)
+            raw_score = total_stars * len(sources)
+            boosted = raw_score * (1 + max(sentiment, 0))
 
             trends.append(
                 Trend(
                     name=best.name,
                     mentions=len(items),
                     growth_pct=self._calculate_growth(items),
-                    score=total_stars * len(sources),
+                    score=round(boosted, 1),
                     sources=sources,
                     top_url=best.url,
                 )

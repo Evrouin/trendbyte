@@ -76,3 +76,14 @@ class DatabaseGateway:
                 (days,),
             ).fetchall()
         return [row["trend_name"] for row in rows]
+
+    def get_weekly_trends(self, limit: int = 5) -> list[dict]:
+        """Get top trends from the past 7 days aggregated by mentions."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT name, SUM(mentions) as mentions, AVG(score) as score "
+                "FROM trends WHERE calculated_at > NOW() - INTERVAL '7 days' "
+                "GROUP BY name ORDER BY mentions DESC LIMIT %s",
+                (limit,),
+            ).fetchall()
+        return [dict(row) for row in rows]
