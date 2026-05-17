@@ -41,6 +41,37 @@ def get_trends(
     return {"trends": [dict(r) for r in rows], "count": len(rows)}
 
 
+@router.get("/trends/by-category")
+def get_trends_by_category(
+    days: int = Query(7, description="Timeframe in days"),
+    limit: int = Query(5, description="Max results per category"),
+):
+    """Get top trends grouped by category."""
+    conn = get_db()
+
+    cats = conn.execute("SELECT id, name FROM categories ORDER BY name").fetchall()
+    result = []
+
+    for cat in cats:
+        rows = conn.execute(
+            "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score "
+            "FROM trends t "
+            "WHERE LOWER(t.name) IN ("
+            "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
+            ") AND t.calculated_at > NOW() - INTERVAL '%s days' "
+            "GROUP BY t.name ORDER BY score DESC LIMIT %s",
+            (cat["id"], days, limit),
+        ).fetchall()
+
+        result.append({
+            "category": cat["name"],
+            "trends": [dict(r) for r in rows],
+        })
+
+    conn.close()
+    return {"categories": result}
+
+
 @router.get("/trends/{name}")
 def get_trend_detail(name: str):
     """Get a single trend with time-series history."""
