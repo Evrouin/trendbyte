@@ -24,7 +24,6 @@ class TrendScorer:
             best = max(items, key=lambda m: m.score)
             sentiment = average_sentiment(items)
 
-            # Boost score: stars * sources * (1 + sentiment)
             raw_score = total_stars * len(sources)
             boosted = raw_score * (1 + max(sentiment, 0))
 

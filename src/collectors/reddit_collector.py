@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from src.logger import Logger
-
 import praw
 from prawcore.exceptions import ResponseException
 
 from src.collectors import BaseCollector
+from src.logger import Logger
 from src.models import Mention
 from src.utils import RateLimitError, retry
 
@@ -59,7 +58,6 @@ class RedditCollector(BaseCollector):
 
     def _extract_tech_name(self, title: str) -> str:
         """Extract the most likely technology name from a post title."""
-        # Simple heuristic: first capitalized word or word after common patterns
         words = title.split()
         for word in words:
             cleaned = word.strip(",:;!?()[]")

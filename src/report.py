@@ -41,26 +41,30 @@ def generate_report(trends: list[Trend], mentions_count: int, image_path: str | 
         sources = ", ".join(t.sources)
         lines.append(f"| {i} | {t.name} | {t.score:.0f} | {t.growth_pct}% | {sources} |")
 
-    lines.extend([
-        "",
-        "## Tweet Preview",
-        "",
-        "```",
-        "⚡ Today's Trending Tech",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "## Tweet Preview",
+            "",
+            "```",
+            "⚡ Today's Trending Tech",
+            "",
+        ]
+    )
 
     for i, t in enumerate(trends[:3], 1):
         lines.append(f"{i}. {t.name} — ↑{t.growth_pct}% | {t.mentions} mentions")
 
-    lines.extend([
-        "",
-        "#TrendByte #TechTrends",
-        "```",
-        "",
-        "---",
-        f"*Generated at {now.isoformat()}*",
-    ])
+    lines.extend(
+        [
+            "",
+            "#TrendByte #TechTrends",
+            "```",
+            "",
+            "---",
+            f"*Generated at {now.isoformat()}*",
+        ]
+    )
 
     filepath.write_text("\n".join(lines))
     logger.info("Report saved: %s", filepath)

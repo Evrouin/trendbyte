@@ -30,7 +30,9 @@ class Config:
         """Load configuration from environment variables."""
         return cls(
             github_token=environ["GITHUB_TOKEN"],
-            database_url=environ.get("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/trendbyte"),
+            database_url=environ.get(
+                "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/trendbyte"
+            ),
             twitter_api_key=environ.get("TWITTER_API_KEY", ""),
             twitter_api_secret=environ.get("TWITTER_API_SECRET", ""),
             twitter_access_token=environ.get("TWITTER_ACCESS_TOKEN", ""),

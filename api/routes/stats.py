@@ -18,9 +18,7 @@ def get_stats():
     trends = conn.execute("SELECT COUNT(DISTINCT name) as total FROM trends").fetchone()
     predictions = conn.execute("SELECT COUNT(*) as total FROM predictions").fetchone()
     sources = conn.execute("SELECT DISTINCT source FROM mentions").fetchall()
-    latest_run = conn.execute(
-        "SELECT MAX(collected_at) as last_run FROM mentions"
-    ).fetchone()
+    latest_run = conn.execute("SELECT MAX(collected_at) as last_run FROM mentions").fetchone()
 
     conn.close()
     return {

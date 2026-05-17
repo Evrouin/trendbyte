@@ -36,7 +36,7 @@ class TrendPrediction:
     """Model output for a technology."""
 
     name: str
-    will_trend_score: float  # 0.0 to 1.0
+    will_trend_score: float
     features: PredictionFeatures
 
 
@@ -108,7 +108,6 @@ class TrendPredictor:
             + f.has_devto * w["has_devto"]
             + f.has_lobsters * w["has_lobsters"]
         )
-        # Sigmoid normalization to 0-1
         return round(1 / (1 + 2.718 ** (-raw)), 4)
 
     def _load_weights(self) -> dict[str, float]:

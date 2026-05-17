@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import psycopg
 from psycopg.rows import dict_row
 
-from src.analysis.predictor import MODEL_PATH, TrendPredictor
+from src.analysis.predictor import TrendPredictor
 from src.config import Config
 from src.logger import Logger
 
@@ -35,26 +34,23 @@ class TrainingPipeline:
         """Execute full training pipeline. Returns metrics."""
         logger.info("Starting training pipeline")
 
-        # Step 1: Label past predictions
         labeled = self._label_predictions()
         if len(labeled) < 10:
             logger.warning("Not enough labeled data (%d). Need at least 10.", len(labeled))
             return {"status": "skipped", "reason": "insufficient data", "samples": len(labeled)}
 
-        # Step 2: Build training set
         features, labels = self._build_training_set(labeled)
 
-        # Step 3: Train (gradient descent on logistic regression)
         old_weights = self._predictor._weights.copy()
         new_weights = self._train(features, labels, old_weights)
 
-        # Step 4: Evaluate
         old_accuracy = self._evaluate(features, labels, old_weights)
         new_accuracy = self._evaluate(features, labels, new_weights)
 
-        logger.info("Old accuracy: %.2f%%, New accuracy: %.2f%%", old_accuracy * 100, new_accuracy * 100)
+        logger.info(
+            "Old accuracy: %.2f%%, New accuracy: %.2f%%", old_accuracy * 100, new_accuracy * 100
+        )
 
-        # Step 5: Save if improved
         if new_accuracy > old_accuracy:
             self._predictor.save_weights(new_weights)
             logger.info("Model improved — weights saved")
@@ -73,7 +69,6 @@ class TrainingPipeline:
         """Label past predictions: did the tech actually trend within 7 days?"""
         conn = psycopg.connect(self._db_url, row_factory=dict_row)
 
-        # Get predictions older than 7 days (enough time to verify outcome)
         predictions = conn.execute(
             "SELECT p.name, p.confidence, p.predicted_at FROM predictions p "
             "WHERE p.predicted_at < NOW() - INTERVAL '7 days' "
@@ -82,19 +77,22 @@ class TrainingPipeline:
 
         labeled = []
         for pred in predictions:
-            # Check if it appeared in top trends within 7 days after prediction
             trended = conn.execute(
                 "SELECT 1 FROM trends WHERE LOWER(name) = LOWER(%s) "
                 "AND calculated_at BETWEEN %s AND %s + INTERVAL '7 days' "
                 "AND score > (SELECT AVG(score) FROM trends WHERE calculated_at BETWEEN %s AND %s + INTERVAL '7 days')",
-                (pred["name"], pred["predicted_at"], pred["predicted_at"],
-                 pred["predicted_at"], pred["predicted_at"]),
+                (
+                    pred["name"],
+                    pred["predicted_at"],
+                    pred["predicted_at"],
+                    pred["predicted_at"],
+                    pred["predicted_at"],
+                ),
             ).fetchone()
 
             outcome = "trended" if trended else "not_trended"
             labeled.append({"name": pred["name"], "label": 1 if trended else 0})
 
-            # Update prediction outcome
             conn.execute(
                 "UPDATE predictions SET outcome = %s, resolved_at = NOW() "
                 "WHERE name = %s AND predicted_at = %s",
@@ -132,25 +130,31 @@ class TrainingPipeline:
             if not row or row["mention_count"] == 0:
                 continue
 
-            features.append([
-                row["mention_count"],
-                row["source_count"],
-                float(row["avg_score"] or 0),
-                float(row["max_score"] or 0),
-                float(row["score_variance"] or 0),
-                min(row["has_github"], 1),
-                min(row["has_hn"], 1),
-                min(row["has_devto"], 1),
-                min(row["has_lobsters"], 1),
-            ])
+            features.append(
+                [
+                    row["mention_count"],
+                    row["source_count"],
+                    float(row["avg_score"] or 0),
+                    float(row["max_score"] or 0),
+                    float(row["score_variance"] or 0),
+                    min(row["has_github"], 1),
+                    min(row["has_hn"], 1),
+                    min(row["has_devto"], 1),
+                    min(row["has_lobsters"], 1),
+                ]
+            )
             labels.append(item["label"])
 
         conn.close()
         return features, labels
 
     def _train(
-        self, features: list[list[float]], labels: list[int],
-        initial_weights: dict[str, float], lr: float = 0.01, epochs: int = 100,
+        self,
+        features: list[list[float]],
+        labels: list[int],
+        initial_weights: dict[str, float],
+        lr: float = 0.01,
+        epochs: int = 100,
     ) -> dict[str, float]:
         """Train via gradient descent on logistic loss."""
         keys = list(initial_weights.keys())
@@ -158,29 +162,31 @@ class TrainingPipeline:
 
         for _ in range(epochs):
             gradients = [0.0] * len(weights)
-            for x, y in zip(features, labels):
-                pred = self._sigmoid(sum(w * xi for w, xi in zip(weights, x)))
+            for x, y in zip(features, labels, strict=False):
+                pred = self._sigmoid(sum(w * xi for w, xi in zip(weights, x, strict=False)))
                 error = pred - y
                 for j in range(len(weights)):
                     gradients[j] += error * x[j]
 
-            # Update weights
             n = len(features)
             for j in range(len(weights)):
                 weights[j] -= lr * (gradients[j] / n)
 
-        return dict(zip(keys, [round(w, 6) for w in weights]))
+        return dict(zip(keys, [round(w, 6) for w in weights], strict=False))
 
     def _evaluate(
-        self, features: list[list[float]], labels: list[int], weights: dict[str, float],
+        self,
+        features: list[list[float]],
+        labels: list[int],
+        weights: dict[str, float],
     ) -> float:
         """Calculate accuracy with given weights."""
         keys = list(weights.keys())
         w = [weights[k] for k in keys]
         correct = 0
 
-        for x, y in zip(features, labels):
-            pred = self._sigmoid(sum(wi * xi for wi, xi in zip(w, x)))
+        for x, y in zip(features, labels, strict=False):
+            pred = self._sigmoid(sum(wi * xi for wi, xi in zip(w, x, strict=False)))
             predicted_label = 1 if pred >= 0.5 else 0
             if predicted_label == y:
                 correct += 1
@@ -189,7 +195,7 @@ class TrainingPipeline:
 
     @staticmethod
     def _sigmoid(x: float) -> float:
-        x = max(min(x, 500), -500)  # prevent overflow
+        x = max(min(x, 500), -500)
         return 1 / (1 + 2.718 ** (-x))
 
 

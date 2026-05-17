@@ -10,9 +10,33 @@ def test_scores_multi_source_spread() -> None:
     scorer = InfluenceScorer()
     now = datetime.utcnow()
     mentions = [
-        Mention(source="github", name="NewTool", url="", description="", stars=100, score=100, collected_at=now),
-        Mention(source="hackernews", name="NewTool", url="", description="", stars=50, score=50, collected_at=now + timedelta(hours=2)),
-        Mention(source="devto", name="NewTool", url="", description="", stars=30, score=30, collected_at=now + timedelta(hours=6)),
+        Mention(
+            source="github",
+            name="NewTool",
+            url="",
+            description="",
+            stars=100,
+            score=100,
+            collected_at=now,
+        ),
+        Mention(
+            source="hackernews",
+            name="NewTool",
+            url="",
+            description="",
+            stars=50,
+            score=50,
+            collected_at=now + timedelta(hours=2),
+        ),
+        Mention(
+            source="devto",
+            name="NewTool",
+            url="",
+            description="",
+            stars=30,
+            score=30,
+            collected_at=now + timedelta(hours=6),
+        ),
     ]
     scores = scorer.score(mentions)
     assert len(scores) == 1
@@ -24,8 +48,24 @@ def test_ignores_single_source() -> None:
     scorer = InfluenceScorer()
     now = datetime.utcnow()
     mentions = [
-        Mention(source="github", name="Solo", url="", description="", stars=100, score=100, collected_at=now),
-        Mention(source="github", name="Solo", url="", description="", stars=200, score=200, collected_at=now + timedelta(hours=1)),
+        Mention(
+            source="github",
+            name="Solo",
+            url="",
+            description="",
+            stars=100,
+            score=100,
+            collected_at=now,
+        ),
+        Mention(
+            source="github",
+            name="Solo",
+            url="",
+            description="",
+            stars=200,
+            score=200,
+            collected_at=now + timedelta(hours=1),
+        ),
     ]
     scores = scorer.score(mentions)
     assert len(scores) == 0

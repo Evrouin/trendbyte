@@ -17,9 +17,11 @@ def _make_bot() -> TwitterBot:
     renderer = MagicMock()
     renderer.render_trending_card.return_value = "/tmp/test.png"
 
-    with patch("src.bot.tweepy.OAuth1UserHandler"), \
-         patch("src.bot.tweepy.API"), \
-         patch("src.bot.tweepy.Client"):
+    with (
+        patch("src.bot.tweepy.OAuth1UserHandler"),
+        patch("src.bot.tweepy.API"),
+        patch("src.bot.tweepy.Client"),
+    ):
         bot = TwitterBot(config=config, renderer=renderer)
 
     return bot

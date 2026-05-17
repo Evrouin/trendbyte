@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from api.routes import trends, predictions, categories, reports, stats, news
+from api.routes import categories, news, predictions, reports, stats, trends
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 

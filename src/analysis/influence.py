@@ -17,7 +17,7 @@ class InfluenceScore:
     """Measures how quickly a technology spreads across sources."""
 
     name: str
-    spread_velocity: float  # sources per day
+    spread_velocity: float
     first_seen: datetime
     sources_reached: int
     total_sources: int
@@ -46,7 +46,6 @@ class InfluenceScorer:
             if len(sources) < 2:
                 continue
 
-            # Time from first mention to appearing in second source
             first_source = first.source
             second_source_mention = next(
                 (m for m in sorted_items if m.source != first_source), None
@@ -58,7 +57,6 @@ class InfluenceScorer:
             time_diff = (second_source_mention.collected_at - first.collected_at).total_seconds()
             hours_to_spread = max(time_diff / 3600, 0.1)
 
-            # Spread velocity: sources reached per day
             total_hours = max(
                 (sorted_items[-1].collected_at - first.collected_at).total_seconds() / 3600, 1
             )

@@ -31,14 +31,12 @@ class KeywordSuggester:
 
     def suggest(self, mentions: list[Mention]) -> list[KeywordSuggestion]:
         """Find frequently uncategorized mentions and suggest categories."""
-        # Count uncategorized names
         uncategorized: dict[str, int] = {}
         for m in mentions:
             name = normalize(m.name)
             if self._categorizer.categorize(name) == ["other"]:
                 uncategorized[name] = uncategorized.get(name, 0) + 1
 
-        # Filter by minimum occurrences
         frequent = {k: v for k, v in uncategorized.items() if v >= self._min_occurrences}
 
         suggestions: list[KeywordSuggestion] = []
@@ -65,19 +63,20 @@ class KeywordSuggester:
                 self._categorizer.add_keyword(s.suggested_category, s.keyword)
                 logger.info(
                     "Auto-added keyword '%s' to '%s' (confidence=%.2f, occurrences=%d)",
-                    s.keyword, s.suggested_category, s.confidence, s.occurrences,
+                    s.keyword,
+                    s.suggested_category,
+                    s.confidence,
+                    s.occurrences,
                 )
                 applied += 1
         return applied
 
     def _guess_category(self, keyword: str, mentions: list[Mention]) -> tuple[str, float]:
         """Guess which category a keyword belongs to based on co-occurrence."""
-        # Find what other categorized terms appear alongside this keyword
         co_mentions = [m for m in mentions if normalize(m.name) == keyword]
         if not co_mentions:
             return "other", 0.0
 
-        # Check source patterns — certain sources lean toward certain categories
         source_hints: dict[str, str] = {
             "github": "languages",
             "devto": "web",
@@ -90,7 +89,6 @@ class KeywordSuggester:
             hint = source_hints.get(m.source, "other")
             category_votes[hint] = category_votes.get(hint, 0) + 1
 
-        # Check description for category clues
         category_clues: dict[str, list[str]] = {
             "ai": ["model", "neural", "training", "inference", "llm", "ai"],
             "web": ["frontend", "backend", "api", "framework", "ui", "app"],

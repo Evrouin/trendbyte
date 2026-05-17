@@ -1,7 +1,7 @@
 """Tests for categorizer and rising stars."""
 
-from src.categorizer import Categorizer
 from src.analysis.rising_stars import RisingStarDetector
+from src.categorizer import Categorizer
 from src.models import Mention
 
 

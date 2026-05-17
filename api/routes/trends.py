@@ -63,10 +63,12 @@ def get_trends_by_category(
             (cat["id"], days, limit),
         ).fetchall()
 
-        result.append({
-            "category": cat["name"],
-            "trends": [dict(r) for r in rows],
-        })
+        result.append(
+            {
+                "category": cat["name"],
+                "trends": [dict(r) for r in rows],
+            }
+        )
 
     conn.close()
     return {"categories": result}
@@ -77,7 +79,6 @@ def get_trend_detail(name: str):
     """Get a single trend with time-series history and related posts."""
     conn = get_db()
 
-    # Current stats
     current = conn.execute(
         "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
         "FROM trends WHERE LOWER(name) = LOWER(%s) "
@@ -85,7 +86,6 @@ def get_trend_detail(name: str):
         (name,),
     ).fetchone()
 
-    # History
     history = conn.execute(
         "SELECT mentions, score, growth_pct, calculated_at "
         "FROM trends WHERE LOWER(name) = LOWER(%s) "
@@ -93,7 +93,6 @@ def get_trend_detail(name: str):
         (name,),
     ).fetchall()
 
-    # Related posts/articles
     posts = conn.execute(
         "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
         "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "

@@ -31,11 +31,13 @@ def get_categories():
             "ORDER BY t.score DESC LIMIT 3",
             (cat["name"],),
         ).fetchall()
-        result.append({
-            "name": cat["name"],
-            "keyword_count": cat["keyword_count"],
-            "top_trends": [dict(t) for t in top],
-        })
+        result.append(
+            {
+                "name": cat["name"],
+                "keyword_count": cat["keyword_count"],
+                "top_trends": [dict(t) for t in top],
+            }
+        )
 
     conn.close()
     return {"categories": result}

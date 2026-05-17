@@ -13,7 +13,7 @@ class RisingStar:
     """A technology predicted to trend."""
 
     name: str
-    confidence: float  # 0.0 to 1.0
+    confidence: float
     signals: list[str]
     url: str
 
@@ -35,19 +35,16 @@ class RisingStarDetector:
             signals: list[str] = []
             confidence = 0.0
 
-            # Signal: new appearance (wasn't mentioned before)
             if prev_count == 0 and count >= 2:
                 signals.append("new_multi_source")
                 confidence += 0.4
 
-            # Signal: mention count spike
             if prev_count > 0:
                 growth = (count - prev_count) / prev_count
                 if growth >= 1.0:
                     signals.append(f"spike_{int(growth * 100)}%")
                     confidence += min(growth * 0.3, 0.4)
 
-            # Signal: multi-source confirmation
             sources = self._sources_for(name, current)
             if len(sources) >= 3:
                 signals.append(f"multi_source_{len(sources)}")

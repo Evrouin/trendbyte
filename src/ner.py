@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import spacy
 from spacy.language import Language
-from spacy.tokens import Span
 
 from src.stopwords import KNOWN_TECH, is_valid_tech_name
 
@@ -19,12 +18,12 @@ def _get_nlp() -> Language:
 
     _nlp = spacy.load("en_core_web_sm")
 
-    # Add custom entity ruler for known tech terms
     ruler = _nlp.add_pipe("entity_ruler", before="ner")
     patterns = [{"label": "TECH", "pattern": tech} for tech in KNOWN_TECH]
-    # Also add capitalized versions
     patterns += [{"label": "TECH", "pattern": tech.capitalize()} for tech in KNOWN_TECH]
-    patterns += [{"label": "TECH", "pattern": tech.upper()} for tech in KNOWN_TECH if len(tech) <= 4]
+    patterns += [
+        {"label": "TECH", "pattern": tech.upper()} for tech in KNOWN_TECH if len(tech) <= 4
+    ]
     ruler.add_patterns(patterns)
 
     return _nlp
@@ -43,14 +42,13 @@ def extract_tech_names(text: str) -> list[str]:
 
     names: list[str] = []
     for ent in doc.ents:
-        # Accept custom TECH entities
-        if ent.label_ == "TECH":
-            names.append(ent.text)
-        # Accept ORG/PRODUCT entities if they match our whitelist
-        elif ent.label_ in ("ORG", "PRODUCT") and is_valid_tech_name(ent.text):
+        if (
+            ent.label_ == "TECH"
+            or ent.label_ in ("ORG", "PRODUCT")
+            and is_valid_tech_name(ent.text)
+        ):
             names.append(ent.text)
 
-    # Deduplicate while preserving order
     seen: set[str] = set()
     unique: list[str] = []
     for name in names:

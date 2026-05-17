@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import re
 
-# Common aliases mapping to canonical names
 ALIASES: dict[str, str] = {
     "golang": "go",
     "js": "javascript",

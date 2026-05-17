@@ -27,7 +27,6 @@ class WeeklySummary:
             logger.warning("No weekly trends to post")
             return
 
-        # Calculate bar heights relative to max
         max_mentions = max(t["mentions"] for t in trends)
         chart_data = [
             {
@@ -41,7 +40,6 @@ class WeeklySummary:
         week = datetime.utcnow().strftime("%B %d, %Y")
         image_path = self._renderer.render_weekly_comparison(chart_data, week)
 
-        # Post thread: first tweet with image, then details
         tweets = self._build_thread(trends, week)
         self._bot.post_thread(tweets, image_path)
         logger.info("Weekly thread posted")

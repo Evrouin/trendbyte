@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from src.logger import Logger
 from datetime import datetime, timedelta
 
 from github import Github, GithubException
 
 from src.collectors import BaseCollector
+from src.logger import Logger
 from src.models import Mention
 from src.stopwords import is_valid_language
 from src.utils import RateLimitError, retry
@@ -42,7 +42,6 @@ class GitHubCollector(BaseCollector):
 
         mentions: list[Mention] = []
         for repo in repos[:30]:
-            # Use language only — skip repos without a language
             name = repo.language
             if not name or not is_valid_language(name):
                 continue

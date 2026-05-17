@@ -44,4 +44,4 @@ def test_ignores_already_categorized() -> None:
     ]
 
     suggestions = suggester.suggest(mentions)
-    assert len(suggestions) == 0  # react is already in "web"
+    assert len(suggestions) == 0

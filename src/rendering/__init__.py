@@ -21,19 +21,29 @@ class ImageRenderer:
 
     def render_trending_card(self, trends: list[dict], date: str) -> str:
         """Render daily trending card. Returns path to generated PNG."""
-        return asyncio.run(self._render("trending_card.html", {"trends": trends, "date": date}, "trending_card.png"))
+        return asyncio.run(
+            self._render(
+                "trending_card.html", {"trends": trends, "date": date}, "trending_card.png"
+            )
+        )
 
     def render_weekly_comparison(self, trends: list[dict], week: str) -> str:
         """Render weekly comparison chart. Returns path to generated PNG."""
-        return asyncio.run(self._render("weekly_comparison.html", {"trends": trends, "week": week}, "weekly_comparison.png"))
+        return asyncio.run(
+            self._render(
+                "weekly_comparison.html", {"trends": trends, "week": week}, "weekly_comparison.png"
+            )
+        )
 
     def render_category_card(self, category: str, trends: list[dict], date: str) -> str:
         """Render category-specific card. Returns path to generated PNG."""
-        return asyncio.run(self._render(
-            "category_card.html",
-            {"category": category, "trends": trends, "date": date},
-            f"category_{category}.png",
-        ))
+        return asyncio.run(
+            self._render(
+                "category_card.html",
+                {"category": category, "trends": trends, "date": date},
+                f"category_{category}.png",
+            )
+        )
 
     async def _render(self, template_name: str, data: dict, output_name: str) -> str:
         """Render template to PNG."""
@@ -42,7 +52,9 @@ class ImageRenderer:
 
         async with async_playwright() as p:
             browser = await p.chromium.launch()
-            page = await browser.new_page(viewport={"width": 1200, "height": 675}, device_scale_factor=2)
+            page = await browser.new_page(
+                viewport={"width": 1200, "height": 675}, device_scale_factor=2
+            )
             await page.set_content(html, wait_until="networkidle")
             filepath = str(OUTPUT_DIR / output_name)
             await page.screenshot(path=filepath)

@@ -47,7 +47,9 @@ def run(dry_run: bool = False) -> None:
 
     collectors: list[BaseCollector] = [
         GitHubCollector(config.github_token),
-        RedditCollector(config.reddit_client_id, config.reddit_client_secret, config.reddit_user_agent),
+        RedditCollector(
+            config.reddit_client_id, config.reddit_client_secret, config.reddit_user_agent
+        ),
         HNCollector(),
         DevtoCollector(),
         LobstersCollector(),
@@ -64,7 +66,6 @@ def run(dry_run: bool = False) -> None:
     if not dry_run:
         db.save_mentions(mentions)
 
-    # Score, filter already-posted, and rank
     trends = scorer.score(mentions)
     if not dry_run:
         recent = db.get_recent_posts(days=3)
@@ -79,9 +80,19 @@ def run(dry_run: bool = False) -> None:
     if dry_run:
         logger.info("--- DRY RUN RESULTS ---")
         for i, t in enumerate(trends[:3], 1):
-            logger.info("#%d %s | score=%.1f | growth=%.1f%% | sources=%s", i, t.name, t.score, t.growth_pct, t.sources)
+            logger.info(
+                "#%d %s | score=%.1f | growth=%.1f%% | sources=%s",
+                i,
+                t.name,
+                t.score,
+                t.growth_pct,
+                t.sources,
+            )
         image = renderer.render_trending_card(
-            trends=[{"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct} for t in trends[:3]],
+            trends=[
+                {"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct}
+                for t in trends[:3]
+            ],
             date=datetime.utcnow().strftime("%B %d, %Y"),
         )
         logger.info("Image generated: %s", image)
@@ -89,19 +100,19 @@ def run(dry_run: bool = False) -> None:
 
     db.save_trends(trends[:10])
 
-    # Generate image regardless
     today = datetime.utcnow().strftime("%B %d, %Y")
     image = renderer.render_trending_card(
-        trends=[{"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct} for t in trends[:3]],
+        trends=[
+            {"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct}
+            for t in trends[:3]
+        ],
         date=today,
     )
     logger.info("Image generated: %s", image)
 
-    # Generate local report
     report_path = generate_report(trends, len(mentions), image)
     logger.info("Report: %s", report_path)
 
-    # Detect rising stars (compare current vs previous mentions)
     previous = db.get_previous_mentions(days=7)
     detector = RisingStarDetector(min_confidence=0.4)
     rising = detector.detect(mentions, previous)
@@ -109,9 +120,10 @@ def run(dry_run: bool = False) -> None:
         db.save_predictions(rising)
         logger.info("Rising stars detected: %d", len(rising))
         for star in rising[:3]:
-            logger.info("  ⭐ %s (confidence=%.2f, signals=%s)", star.name, star.confidence, star.signals)
+            logger.info(
+                "  ⭐ %s (confidence=%.2f, signals=%s)", star.name, star.confidence, star.signals
+            )
 
-    # Post to Twitter if configured
     if not config.twitter_api_key or "--no-post" in sys.argv:
         logger.info("Twitter posting disabled — skipping")
         logger.info("Pipeline complete (collect + analyze only)")

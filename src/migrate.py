@@ -7,7 +7,7 @@ from pathlib import Path
 import psycopg
 from psycopg.rows import dict_row
 
-from src.categorizer import Categorizer, DEFAULT_CATEGORIES
+from src.categorizer import Categorizer
 from src.config import Config
 from src.logger import Logger
 
@@ -52,7 +52,6 @@ def migrate() -> None:
         )
         conn.commit()
 
-    # Seed categories if empty
     row = conn.execute("SELECT COUNT(*) as cnt FROM category_keywords").fetchone()
     if row and row[0] == 0:
         logger.info("Seeding default categories")

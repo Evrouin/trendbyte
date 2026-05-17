@@ -104,6 +104,7 @@ class DatabaseGateway:
     def get_previous_mentions(self, days: int = 7) -> list:
         """Get mentions from previous runs for comparison."""
         from src.models import Mention
+
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT source, name, url, description, stars, forks, score, collected_at "
@@ -113,9 +114,14 @@ class DatabaseGateway:
             ).fetchall()
         return [
             Mention(
-                source=r["source"], name=r["name"], url=r["url"],
-                description=r["description"], stars=r["stars"],
-                forks=r["forks"], score=r["score"], collected_at=r["collected_at"],
+                source=r["source"],
+                name=r["name"],
+                url=r["url"],
+                description=r["description"],
+                stars=r["stars"],
+                forks=r["forks"],
+                score=r["score"],
+                collected_at=r["collected_at"],
             )
             for r in rows
         ]
@@ -138,6 +144,12 @@ class DatabaseGateway:
             conn.execute(
                 "INSERT INTO analytics (tweet_id, impressions, likes, retweets, replies) "
                 "VALUES (%s, %s, %s, %s, %s)",
-                (metrics.tweet_id, metrics.impressions, metrics.likes, metrics.retweets, metrics.replies),
+                (
+                    metrics.tweet_id,
+                    metrics.impressions,
+                    metrics.likes,
+                    metrics.retweets,
+                    metrics.replies,
+                ),
             )
             conn.commit()

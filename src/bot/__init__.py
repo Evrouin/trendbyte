@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from src.logger import Logger
-
 import tweepy
 
+from src.logger import Logger
 from src.models import Post, Trend
 from src.rendering import ImageRenderer
 

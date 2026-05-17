@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from src.logger import Logger
 import time
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, TypeVar
+
+from src.logger import Logger
 
 logger = Logger.get(__name__)
 
