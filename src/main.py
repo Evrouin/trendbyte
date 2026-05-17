@@ -87,6 +87,20 @@ def run(dry_run: bool = False) -> None:
 
     db.save_trends(trends[:10])
 
+    # Generate image regardless
+    today = datetime.utcnow().strftime("%B %d, %Y")
+    image = renderer.render_trending_card(
+        trends=[{"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct} for t in trends[:3]],
+        date=today,
+    )
+    logger.info("Image generated: %s", image)
+
+    # Post to Twitter if configured
+    if not config.twitter_api_key or "--no-post" in sys.argv:
+        logger.info("Twitter posting disabled — skipping")
+        logger.info("Pipeline complete (collect + analyze only)")
+        return
+
     bot = TwitterBot(
         config={
             "api_key": config.twitter_api_key,
@@ -98,7 +112,6 @@ def run(dry_run: bool = False) -> None:
         renderer=renderer,
     )
 
-    today = datetime.utcnow().strftime("%B %d, %Y")
     post = bot.post_daily_trends(trends, today)
 
     if post:
