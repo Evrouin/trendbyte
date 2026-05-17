@@ -9,7 +9,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
-from api.routes import trends, predictions, categories, reports, stats
+from api.routes import trends, predictions, categories, reports, stats, news
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
@@ -34,6 +34,7 @@ app.include_router(predictions.router, prefix="/api")
 app.include_router(categories.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
+app.include_router(news.router, prefix="/api")
 
 
 @app.get("/")
