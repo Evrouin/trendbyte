@@ -9,6 +9,7 @@ from github import Github, GithubException
 
 from src.collectors import BaseCollector
 from src.models import Mention
+from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -41,10 +42,17 @@ class GitHubCollector(BaseCollector):
 
         mentions: list[Mention] = []
         for repo in repos[:30]:
+            # Prefer language or first topic over repo name
+            name = repo.language or ""
+            if not name:
+                topics = repo.get_topics()
+                name = topics[0] if topics else repo.name
+            if not is_valid_tech_name(name):
+                continue
             mentions.append(
                 Mention(
                     source=self.source_name,
-                    name=repo.name,
+                    name=name,
                     url=repo.html_url,
                     description=repo.description or "",
                     stars=repo.stargazers_count,
