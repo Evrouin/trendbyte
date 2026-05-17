@@ -19,6 +19,7 @@ from src.logger import Logger
 from src.migrate import migrate
 from src.models import Mention
 from src.rendering import ImageRenderer
+from src.report import generate_report
 
 Logger.setup()
 logger = Logger.get(__name__)
@@ -94,6 +95,10 @@ def run(dry_run: bool = False) -> None:
         date=today,
     )
     logger.info("Image generated: %s", image)
+
+    # Generate local report
+    report_path = generate_report(trends, len(mentions), image)
+    logger.info("Report: %s", report_path)
 
     # Post to Twitter if configured
     if not config.twitter_api_key or "--no-post" in sys.argv:

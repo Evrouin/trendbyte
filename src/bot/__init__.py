@@ -33,40 +33,29 @@ class TwitterBot:
         self._renderer = renderer
 
     def post_daily_trends(self, trends: list[Trend], date: str) -> Post | None:
-        """Post top 3 trends, with image if supported."""
+        """Post top 3 trends with a generated image."""
         if not trends:
             logger.warning("No trends to post")
             return None
 
         top_3 = trends[:3]
+        image_path = self._renderer.render_trending_card(
+            trends=[
+                {
+                    "name": t.name,
+                    "stars": f"{t.mentions}",
+                    "forks": "—",
+                    "growth": t.growth_pct,
+                }
+                for t in top_3
+            ],
+            date=date,
+        )
+
         tweet_text = self._format_tweet(top_3)
+        media = self._api.media_upload(image_path)
+        response = self._client.create_tweet(text=tweet_text, media_ids=[media.media_id])
 
-        # Try posting with image, fall back to text-only
-        media_id = None
-        try:
-            image_path = self._renderer.render_trending_card(
-                trends=[
-                    {
-                        "name": t.name,
-                        "stars": f"{t.mentions}",
-                        "forks": "—",
-                        "growth": t.growth_pct,
-                    }
-                    for t in top_3
-                ],
-                date=date,
-            )
-            media = self._api.media_upload(image_path)
-            media_id = media.media_id
-        except Exception as e:
-            logger.warning("Media upload failed (free tier?), posting text only: %s", e)
-            image_path = None
-
-        kwargs: dict = {"text": tweet_text}
-        if media_id:
-            kwargs["media_ids"] = [media_id]
-
-        response = self._client.create_tweet(**kwargs)
         tweet_id = str(response.data["id"])
         logger.info("Posted tweet", extra={"tweet_id": tweet_id})
 
