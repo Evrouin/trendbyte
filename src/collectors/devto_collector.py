@@ -7,6 +7,7 @@ import requests
 from src.collectors import BaseCollector
 from src.logger import Logger
 from src.models import Mention
+from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -38,10 +39,13 @@ class DevtoCollector(BaseCollector):
         mentions: list[Mention] = []
 
         for article in articles:
+            name = self._extract_tech_name(article)
+            if not name:
+                continue
             mentions.append(
                 Mention(
                     source=self.source_name,
-                    name=self._extract_tech_name(article),
+                    name=name,
                     url=article.get("url", ""),
                     description=article.get("title", ""),
                     stars=article.get("positive_reactions_count", 0),
@@ -55,12 +59,13 @@ class DevtoCollector(BaseCollector):
     def _extract_tech_name(self, article: dict) -> str:
         """Extract tech name from tags or title."""
         tags = article.get("tag_list", [])
-        if tags:
-            return tags[0]
+        for tag in tags:
+            if is_valid_tech_name(tag):
+                return tag
         title = article.get("title", "")
         words = title.split()
         for word in words:
             cleaned = word.strip(",:;!?()[]\"'")
-            if cleaned and cleaned[0].isupper() and len(cleaned) > 2:
+            if cleaned and len(cleaned) > 2 and cleaned[0].isupper() and is_valid_tech_name(cleaned):
                 return cleaned
-        return words[0] if words else "unknown"
+        return ""

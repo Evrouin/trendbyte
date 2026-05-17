@@ -7,6 +7,7 @@ import requests
 from src.collectors import BaseCollector
 from src.logger import Logger
 from src.models import Mention
+from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -35,10 +36,14 @@ class LobstersCollector(BaseCollector):
 
         for story in stories:
             tags = story.get("tags", [])
+            valid_tags = [t for t in tags if is_valid_tech_name(t)]
+            name = valid_tags[0] if valid_tags else self._extract_tech_name(story.get("title", ""))
+            if not name:
+                continue
             mentions.append(
                 Mention(
                     source=self.source_name,
-                    name=tags[0] if tags else self._extract_tech_name(story.get("title", "")),
+                    name=name,
                     url=story.get("url") or story.get("short_id_url", ""),
                     description=story.get("title", ""),
                     stars=story.get("score", 0),
@@ -54,6 +59,6 @@ class LobstersCollector(BaseCollector):
         words = title.split()
         for word in words:
             cleaned = word.strip(",:;!?()[]\"'")
-            if cleaned and cleaned[0].isupper() and len(cleaned) > 2:
+            if cleaned and len(cleaned) > 2 and cleaned[0].isupper() and is_valid_tech_name(cleaned):
                 return cleaned
-        return words[0] if words else "unknown"
+        return ""

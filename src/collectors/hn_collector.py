@@ -9,6 +9,7 @@ import requests
 
 from src.collectors import BaseCollector
 from src.models import Mention
+from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -46,10 +47,13 @@ class HNCollector(BaseCollector):
         mentions: list[Mention] = []
 
         for hit in hits:
+            name = self._extract_tech_name(hit.get("title", ""))
+            if not name:
+                continue
             mentions.append(
                 Mention(
                     source=self.source_name,
-                    name=self._extract_tech_name(hit.get("title", "")),
+                    name=name,
                     url=hit.get("url") or f"https://news.ycombinator.com/item?id={hit['objectID']}",
                     description=hit.get("title", ""),
                     stars=hit.get("points", 0),
@@ -65,6 +69,6 @@ class HNCollector(BaseCollector):
         words = title.split()
         for word in words:
             cleaned = word.strip(",:;!?()[]\"'")
-            if cleaned and cleaned[0].isupper() and len(cleaned) > 2:
+            if cleaned and len(cleaned) > 2 and cleaned[0].isupper() and is_valid_tech_name(cleaned):
                 return cleaned
-        return words[0] if words else "unknown"
+        return ""
