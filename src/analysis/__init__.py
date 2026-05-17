@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from src.analysis.sentiment import average_sentiment
+from src.display_names import to_display_name
 from src.models import Mention, Trend
 from src.normalizer import normalize
 
@@ -18,7 +19,7 @@ class TrendScorer:
             grouped.setdefault(key, []).append(m)
 
         trends: list[Trend] = []
-        for _, items in grouped.items():
+        for key, items in grouped.items():
             total_stars = sum(m.stars or 0 for m in items)
             sources = list({m.source for m in items})
             best = max(items, key=lambda m: m.score)
@@ -29,7 +30,7 @@ class TrendScorer:
 
             trends.append(
                 Trend(
-                    name=best.name,
+                    name=to_display_name(best.name),
                     mentions=len(items),
                     growth_pct=self._calculate_growth(items),
                     score=round(boosted, 1),
