@@ -74,7 +74,7 @@ def get_trends_by_category(
 
 @router.get("/trends/{name}")
 def get_trend_detail(name: str):
-    """Get a single trend with time-series history."""
+    """Get a single trend with time-series history and related posts."""
     conn = get_db()
 
     # Current stats
@@ -93,6 +93,15 @@ def get_trend_detail(name: str):
         (name,),
     ).fetchall()
 
+    # Related posts/articles
+    posts = conn.execute(
+        "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
+        "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "
+        "ORDER BY url, stars DESC "
+        "LIMIT 10",
+        (name,),
+    ).fetchall()
+
     conn.close()
 
     if not current:
@@ -101,4 +110,5 @@ def get_trend_detail(name: str):
     return {
         "trend": dict(current),
         "history": [dict(r) for r in history],
+        "posts": [dict(r) for r in posts],
     }
