@@ -6,3 +6,4 @@ output/
 docs/
 *.egg-info/
 .pytest_cache/
+.env.prod
