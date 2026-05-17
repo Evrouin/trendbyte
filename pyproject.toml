@@ -2,7 +2,7 @@
 name = "trendbyte"
 version = "0.1.0"
 description = "Tech Trend Intelligence Twitter Bot"
-requires-python = ">=3.12"
+requires-python = ">=3.12,<4.0"
 dependencies = [
     "tweepy==4.14.0",
     "PyGithub==2.3.0",
