@@ -6,6 +6,7 @@ import sys
 from datetime import datetime
 
 from src.analysis import TrendScorer
+from src.analysis.rising_stars import RisingStarDetector
 from src.bot import TwitterBot
 from src.collectors import BaseCollector
 from src.collectors.devto_collector import DevtoCollector
@@ -99,6 +100,16 @@ def run(dry_run: bool = False) -> None:
     # Generate local report
     report_path = generate_report(trends, len(mentions), image)
     logger.info("Report: %s", report_path)
+
+    # Detect rising stars (compare current vs previous mentions)
+    previous = db.get_previous_mentions(days=7)
+    detector = RisingStarDetector(min_confidence=0.4)
+    rising = detector.detect(mentions, previous)
+    if rising:
+        db.save_predictions(rising)
+        logger.info("Rising stars detected: %d", len(rising))
+        for star in rising[:3]:
+            logger.info("  ⭐ %s (confidence=%.2f, signals=%s)", star.name, star.confidence, star.signals)
 
     # Post to Twitter if configured
     if not config.twitter_api_key or "--no-post" in sys.argv:

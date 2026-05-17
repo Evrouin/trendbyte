@@ -101,6 +101,37 @@ class DatabaseGateway:
             ).fetchall()
         return [row["tweet_id"] for row in rows]
 
+    def get_previous_mentions(self, days: int = 7) -> list:
+        """Get mentions from previous runs for comparison."""
+        from src.models import Mention
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT source, name, url, description, stars, forks, score, collected_at "
+                "FROM mentions WHERE collected_at < NOW() - INTERVAL '1 day' "
+                "AND collected_at > NOW() - INTERVAL '%s days'",
+                (days,),
+            ).fetchall()
+        return [
+            Mention(
+                source=r["source"], name=r["name"], url=r["url"],
+                description=r["description"], stars=r["stars"],
+                forks=r["forks"], score=r["score"], collected_at=r["collected_at"],
+            )
+            for r in rows
+        ]
+
+    def save_predictions(self, rising_stars: list) -> None:
+        """Store rising star predictions."""
+        with self._connect() as conn:
+            for star in rising_stars:
+                conn.execute(
+                    "INSERT INTO predictions (name, confidence, signals, url) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (star.name, star.confidence, star.signals, star.url),
+                )
+            conn.commit()
+        logger.info("Saved %d predictions", len(rising_stars))
+
     def save_analytics(self, metrics) -> None:
         """Store tweet engagement metrics."""
         with self._connect() as conn:
