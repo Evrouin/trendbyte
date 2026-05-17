@@ -1,51 +1,63 @@
 # TrendByte
 
-A tech trend intelligence system that tracks emerging technologies across developer communities, analyzes momentum, and generates daily reports with visual summaries.
+A tech trend intelligence system that tracks emerging technologies across developer communities, analyzes momentum with ML/NLP, and presents insights via a real-time dashboard.
 
-## Overview
-
-TrendByte collects data from multiple developer platforms, scores technologies by mention frequency and cross-source confirmation, detects rising stars before they peak, and produces branded visual cards for social media distribution.
-
-Twitter/X posting is currently pending API credit activation. The system operates fully in collect, analyze, and report mode.
+🔗 **Dashboard:** https://trendbytedashboard.evrouin.com  
+🔗 **API:** https://trendbyte.evrouin.com  
+🔗 **Frontend repo:** https://github.com/Evrouin/trendbyte-dashboard
 
 ## Features
 
 - Multi-source data collection (GitHub, Hacker News, Dev.to, Lobsters)
-- Trend scoring with sentiment-boosted ranking
-- Cross-source deduplication and name normalization
+- spaCy NER + whitelist-based tech name extraction
+- Trend scoring with sentiment boost and cross-source deduplication
 - Rising star detection with confidence scoring
-- Database-backed dynamic category management with auto-suggestion
-- Branded image generation (dark theme, glassmorphism cards)
-- Sequential SQL migrations with version tracking
-- Scheduled daily and weekly pipelines via GitHub Actions
-- Local markdown report generation per run
+- ML trend predictor (gradient descent, weekly auto-training)
+- Influence scoring (cross-platform spread velocity)
+- Database-backed dynamic categories with auto-keyword suggestion
+- Branded image generation (dark glassmorphism cards via Playwright)
+- FastAPI with rate-limited REST endpoints
+- Scheduled daily/weekly pipelines via GitHub Actions
+- SonarCloud quality gate integration
 
 ## Architecture
 
 ```
 src/
-├── collectors/          Data ingestion (GitHub, HN, Dev.to, Lobsters, Reddit)
-├── analysis/            Trend scoring, sentiment, rising star detection
-├── bot/                 Twitter/X posting (pending activation)
-├── rendering/           HTML/CSS templates rendered to PNG via Playwright
+├── collectors/          Data ingestion (GitHub, HN, Dev.to, Lobsters)
+├── analysis/            Scoring, sentiment, rising stars, predictor, training
+├── bot/                 Twitter/X posting (pending API credits)
+├── rendering/           HTML→PNG via Playwright + Jinja2
 ├── models/              Domain entities (dataclasses)
-├── gateway.py           Database gateway (all PostgreSQL operations)
-├── categorizer.py       DB-backed technology categorization
-├── normalizer.py        Name normalization and alias resolution
-├── analytics.py         Tweet engagement tracking
-├── report.py            Local markdown report generation
+├── gateway.py           Database gateway (PostgreSQL)
+├── ner.py               spaCy NER + entity ruler
+├── stopwords.py         KNOWN_TECH whitelist
+├── normalizer.py        Name normalization + aliases
+├── display_names.py     Canonical display names
+├── categorizer.py       DB-backed categorization
+├── report.py            Markdown report generation
 ├── config.py            Environment-based configuration
-├── logger.py            Centralized logging
 ├── migrate.py           Sequential SQL migration runner
 └── main.py              Pipeline orchestrator
+
+api/
+├── __init__.py          FastAPI app (CORS, rate limiting)
+├── db.py                Connection helper
+└── routes/              trends, predictions, categories, reports, stats, news
 ```
 
-## Requirements
+## API Endpoints
 
-- Python 3.12+
-- PostgreSQL 16 (local Docker or Neon for production)
-- Playwright (Chromium) for image rendering
-- GitHub personal access token
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/trends` | Top trends (filterable by days, limit) |
+| `GET /api/trends/{name}` | Trend detail with score history |
+| `GET /api/trends/by-category` | Trends grouped by category |
+| `GET /api/predictions` | Rising star predictions |
+| `GET /api/categories` | All categories with keywords |
+| `GET /api/stats` | System stats (totals, sources, last run) |
+| `GET /api/reports/latest` | Latest markdown report |
+| `GET /api/news` | Recent posts from all sources |
 
 ## Setup
 
@@ -54,6 +66,7 @@ git clone https://github.com/Evrouin/trendbyte.git
 cd trendbyte
 
 pip install -e ".[dev]"
+python -m spacy download en_core_web_sm
 playwright install chromium
 
 docker run -d --name trendbyte-db \
@@ -63,30 +76,19 @@ docker run -d --name trendbyte-db \
   postgres:16
 
 cp .env.example .env
-# Fill in GITHUB_TOKEN and DATABASE_URL
-
 python -m src.migrate
 ```
 
 ## Usage
 
 ```bash
-# Full pipeline (collect, analyze, save, generate image and report)
-python -m src.main --no-post
-
-# Dry run (no database writes, no posting)
-python -m src.main --dry-run
-
-# Full pipeline with Twitter posting (requires API credits)
-python -m src.main
-
-# Run migrations only
-python -m src.migrate
+python -m src.main --no-post     # Full pipeline without Twitter
+python -m src.main --dry-run     # No DB writes, no posting
+python -m src.backfill           # Backfill historical data
+python -m src.migrate            # Run migrations
 ```
 
 ## Configuration
-
-All configuration is loaded from environment variables. See `.env.example` for the full list.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
@@ -96,65 +98,30 @@ All configuration is loaded from environment variables. See `.env.example` for t
 | TWITTER_API_SECRET | No | X API consumer secret |
 | TWITTER_ACCESS_TOKEN | No | X API access token |
 | TWITTER_ACCESS_SECRET | No | X API access token secret |
-| TWITTER_BEARER_TOKEN | No | X API bearer token |
-| REDDIT_CLIENT_ID | No | Reddit app client ID |
-| REDDIT_CLIENT_SECRET | No | Reddit app client secret |
-
-## Database
-
-PostgreSQL with sequential numbered migrations in `migrations/`. Tables:
-
-- `mentions` — raw data from collectors
-- `trends` — scored and ranked technologies
-- `predictions` — rising star detections with confidence
-- `posts` — published tweet history
-- `analytics` — tweet engagement metrics
-- `categories` / `category_keywords` — dynamic categorization
-- `schema_migrations` — migration version tracking
 
 ## Scheduling
 
-GitHub Actions workflows run on cron:
-
-- **Daily** (2 PM UTC): Collect, analyze, score, predict, generate report
-- **Weekly** (Sunday 6 PM UTC): Aggregate weekly trends, generate comparison chart
-
-Both workflows can be triggered manually via `workflow_dispatch`.
+| Workflow | Schedule | Description |
+|----------|----------|-------------|
+| Daily | 2 PM UTC | Collect, analyze, score, predict |
+| Weekly | Sun 6 PM UTC | Aggregate weekly trends |
+| Training | Mon 12 PM UTC | Retrain ML predictor |
+| SonarCloud | On push | Code quality scan |
 
 ## Development
 
 ```bash
-black src/ tests/
-ruff check src/ tests/
-mypy src/
-pytest --cov=src
+ruff check src/ api/ tests/
+ruff format src/ api/ tests/
+pytest tests/ -v
 ```
 
-## Testing
+## Tech Stack
 
-30 unit tests covering:
-
-- Trend scoring and ranking
-- Name normalization and deduplication
-- Sentiment analysis
-- Rising star detection
-- Twitter bot (mocked API)
-- Retry logic and error handling
-- Category classification
-
-## Project Status
-
-| Component | Status |
-|-----------|--------|
-| Data collection (4 sources) | Complete |
-| Trend analysis and scoring | Complete |
-| Rising star predictions | Complete |
-| Image generation | Complete |
-| Report generation | Complete |
-| Database and migrations | Complete |
-| GitHub Actions scheduling | Complete |
-| Twitter/X posting | Pending (API credits required) |
-| Reddit collector | Pending (API approval required) |
+- Python 3.12, FastAPI, psycopg 3, spaCy, Playwright
+- PostgreSQL (Neon production)
+- GitHub Actions, Render (deployment)
+- SonarCloud (quality)
 
 ## License
 
