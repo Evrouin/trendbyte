@@ -9,7 +9,7 @@ import requests
 
 from src.collectors import BaseCollector
 from src.models import Mention
-from src.stopwords import is_valid_tech_name
+from src.ner import extract_best_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -65,10 +65,5 @@ class HNCollector(BaseCollector):
         return mentions
 
     def _extract_tech_name(self, title: str) -> str:
-        """Extract the most likely technology name from a story title."""
-        words = title.split()
-        for word in words:
-            cleaned = word.strip(",:;!?()[]\"'")
-            if cleaned and len(cleaned) > 2 and cleaned[0].isupper() and is_valid_tech_name(cleaned):
-                return cleaned
-        return ""
+        """Extract technology name using NER."""
+        return extract_best_tech_name(title)

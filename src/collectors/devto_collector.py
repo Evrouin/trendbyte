@@ -7,6 +7,7 @@ import requests
 from src.collectors import BaseCollector
 from src.logger import Logger
 from src.models import Mention
+from src.ner import extract_best_tech_name
 from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
@@ -57,15 +58,9 @@ class DevtoCollector(BaseCollector):
         return mentions
 
     def _extract_tech_name(self, article: dict) -> str:
-        """Extract tech name from tags or title."""
+        """Extract tech name from tags or title using NER."""
         tags = article.get("tag_list", [])
         for tag in tags:
             if is_valid_tech_name(tag):
                 return tag
-        title = article.get("title", "")
-        words = title.split()
-        for word in words:
-            cleaned = word.strip(",:;!?()[]\"'")
-            if cleaned and len(cleaned) > 2 and cleaned[0].isupper() and is_valid_tech_name(cleaned):
-                return cleaned
-        return ""
+        return extract_best_tech_name(article.get("title", ""))

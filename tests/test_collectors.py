@@ -36,5 +36,5 @@ def test_hn_collector_parses_response() -> None:
 
 def test_hn_collector_extracts_tech_name() -> None:
     collector = HNCollector()
-    assert collector._extract_tech_name("Rust is great") == "Rust"
-    assert collector._extract_tech_name("why golang wins") == ""
+    assert collector._extract_tech_name("Rust is great for CLI tools") == "Rust"
+    assert collector._extract_tech_name("some random non-tech title") == ""
