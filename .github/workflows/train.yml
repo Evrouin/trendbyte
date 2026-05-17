@@ -1,0 +1,35 @@
+name: TrendByte Model Training
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'  # Monday noon UTC (weekly)
+  workflow_dispatch:
+
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Run training pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m src.analysis.train
+
+      - name: Commit updated weights
+        run: |
+          git config user.name "Evrouin"
+          git config user.email "elwaycortez@gmail.com"
+          if [ -f models/trend_model.json ]; then
+            git add models/trend_model.json
+            git diff --cached --quiet || git commit -m "chore: update model weights"
+            git push
+          fi
