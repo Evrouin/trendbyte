@@ -16,7 +16,9 @@ jobs:
           python-version: '3.12'
 
       - name: Install dependencies
-        run: pip install -e .
+        run: |
+          pip install -e .
+          python -m spacy download en_core_web_sm
 
       - name: Run training pipeline
         env:
