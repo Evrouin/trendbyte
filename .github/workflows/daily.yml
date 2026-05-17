@@ -18,6 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .
+          python -m spacy download en_core_web_sm
           playwright install chromium
 
       - name: Run pipeline

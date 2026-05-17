@@ -2,7 +2,7 @@ services:
   - type: web
     name: trendbyte-api
     runtime: python
-    buildCommand: pip install -e .
+    buildCommand: pip install -e . && python -m spacy download en_core_web_sm
     startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: GITHUB_TOKEN
