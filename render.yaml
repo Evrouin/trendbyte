@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: trendbyte-api
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GITHUB_TOKEN
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: PYTHON_VERSION
+        value: "3.12.0"
