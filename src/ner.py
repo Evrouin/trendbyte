@@ -24,7 +24,7 @@ def _get_nlp() -> Language:
     patterns += [
         {"label": "TECH", "pattern": tech.upper()} for tech in KNOWN_TECH if len(tech) <= 4
     ]
-    ruler.add_patterns(patterns)
+    ruler.add_patterns(patterns)  # type: ignore[attr-defined]
 
     return _nlp
 

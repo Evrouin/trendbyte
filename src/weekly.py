@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 from src.bot import TwitterBot
 from src.gateway import DatabaseGateway
@@ -44,7 +45,7 @@ class WeeklySummary:
         self._bot.post_thread(tweets, image_path)
         logger.info("Weekly thread posted")
 
-    def _build_thread(self, trends: list[dict], week: str) -> list[str]:
+    def _build_thread(self, trends: list[dict[str, Any]], week: str) -> list[str]:
         """Build tweet thread text."""
         thread = [f"⚡ TrendByte Weekly Report — {week}\n\nTop 5 technologies this week:\n"]
         for i, t in enumerate(trends, 1):

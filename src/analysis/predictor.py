@@ -108,12 +108,12 @@ class TrendPredictor:
             + f.has_devto * w["has_devto"]
             + f.has_lobsters * w["has_lobsters"]
         )
-        return round(1 / (1 + 2.718 ** (-raw)), 4)
+        return float(round(1 / (1 + 2.718 ** (-raw)), 4))
 
     def _load_weights(self) -> dict[str, float]:
         """Load model weights from JSON or use defaults."""
         if MODEL_PATH.exists():
-            return json.loads(MODEL_PATH.read_text())
+            return dict(json.loads(MODEL_PATH.read_text()))
         return self._default_weights()
 
     @staticmethod

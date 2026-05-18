@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader
 from playwright.async_api import async_playwright
@@ -19,7 +20,7 @@ class ImageRenderer:
         self._env = Environment(loader=FileSystemLoader(TEMPLATES_DIR))
         OUTPUT_DIR.mkdir(exist_ok=True)
 
-    def render_trending_card(self, trends: list[dict], date: str) -> str:
+    def render_trending_card(self, trends: list[dict[str, Any]], date: str) -> str:
         """Render daily trending card. Returns path to generated PNG."""
         return asyncio.run(
             self._render(
@@ -27,7 +28,7 @@ class ImageRenderer:
             )
         )
 
-    def render_weekly_comparison(self, trends: list[dict], week: str) -> str:
+    def render_weekly_comparison(self, trends: list[dict[str, Any]], week: str) -> str:
         """Render weekly comparison chart. Returns path to generated PNG."""
         return asyncio.run(
             self._render(
@@ -35,7 +36,7 @@ class ImageRenderer:
             )
         )
 
-    def render_category_card(self, category: str, trends: list[dict], date: str) -> str:
+    def render_category_card(self, category: str, trends: list[dict[str, Any]], date: str) -> str:
         """Render category-specific card. Returns path to generated PNG."""
         return asyncio.run(
             self._render(
@@ -45,7 +46,7 @@ class ImageRenderer:
             )
         )
 
-    async def _render(self, template_name: str, data: dict, output_name: str) -> str:
+    async def _render(self, template_name: str, data: dict[str, Any], output_name: str) -> str:
         """Render template to PNG."""
         template = self._env.get_template(template_name)
         html = template.render(**data)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from fastapi import APIRouter
 
@@ -12,7 +13,7 @@ REPORTS_DIR = Path(__file__).parent.parent.parent / "output" / "reports"
 
 
 @router.get("/reports/latest")
-def get_latest_report():
+def get_latest_report() -> dict[str, Any]:
     """Get the latest pipeline run report."""
     if not REPORTS_DIR.exists():
         return {"error": "No reports found"}

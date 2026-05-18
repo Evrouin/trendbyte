@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Query
 
 from api.db import get_db
@@ -13,7 +15,7 @@ router = APIRouter(tags=["news"])
 def get_latest_news(
     source: str | None = Query(None, description="Filter by source"),
     limit: int = Query(20, description="Max results"),
-):
+) -> dict[str, Any]:
     """Get latest collected posts/articles across all sources."""
     conn = get_db()
 
@@ -21,7 +23,7 @@ def get_latest_news(
         "SELECT source, name, url, description, stars, collected_at "
         "FROM mentions WHERE url != '' AND description != '' "
     )
-    params: list = []
+    params: list[Any] = []
 
     if source:
         query += "AND source = %s "

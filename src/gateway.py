@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -19,10 +20,10 @@ class DatabaseGateway:
     def __init__(self, database_url: str) -> None:
         self._url = database_url
 
-    def _connect(self) -> psycopg.Connection:
-        return psycopg.connect(self._url, row_factory=dict_row)
+    def _connect(self) -> psycopg.Connection[dict[str, Any]]:
+        return psycopg.connect(self._url, row_factory=dict_row)  # type: ignore[return-value]
 
-    def connection(self) -> psycopg.Connection:
+    def connection(self) -> psycopg.Connection[dict[str, Any]]:
         """Return a connection for external use (e.g., categorizer)."""
         return self._connect()
 
@@ -81,7 +82,7 @@ class DatabaseGateway:
             ).fetchall()
         return [row["trend_name"] for row in rows]
 
-    def get_weekly_trends(self, limit: int = 5) -> list[dict]:
+    def get_weekly_trends(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get top trends from the past 7 days aggregated by mentions."""
         with self._connect() as conn:
             rows = conn.execute(
@@ -101,7 +102,7 @@ class DatabaseGateway:
             ).fetchall()
         return [row["tweet_id"] for row in rows]
 
-    def get_previous_mentions(self, days: int = 7) -> list:
+    def get_previous_mentions(self, days: int = 7) -> list[Mention]:
         """Get mentions from previous runs for comparison."""
         from src.models import Mention
 
@@ -126,7 +127,7 @@ class DatabaseGateway:
             for r in rows
         ]
 
-    def save_predictions(self, rising_stars: list) -> None:
+    def save_predictions(self, rising_stars: list[Any]) -> None:
         """Store rising star predictions."""
         with self._connect() as conn:
             for star in rising_stars:
@@ -138,7 +139,7 @@ class DatabaseGateway:
             conn.commit()
         logger.info("Saved %d predictions", len(rising_stars))
 
-    def save_analytics(self, metrics) -> None:
+    def save_analytics(self, metrics: Any) -> None:
         """Store tweet engagement metrics."""
         with self._connect() as conn:
             conn.execute(

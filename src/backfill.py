@@ -36,7 +36,7 @@ def backfill_hn(db: DatabaseGateway) -> int:
                 params={
                     "tags": "story",
                     "numericFilters": f"created_at_i>{since},created_at_i<{until},points>50",
-                    "hitsPerPage": 50,
+                    "hitsPerPage": "50",
                 },
                 timeout=15,
             )
@@ -55,7 +55,8 @@ def backfill_hn(db: DatabaseGateway) -> int:
                     Mention(
                         source="hackernews",
                         name=to_display_name(name),
-                        url=hit.get("url") or f"https://news.ycombinator.com/item?id={hit['objectID']}",
+                        url=hit.get("url")
+                        or f"https://news.ycombinator.com/item?id={hit['objectID']}",
                         description=hit.get("title", ""),
                         stars=hit.get("points", 0),
                         score=float(hit.get("points", 0)),
@@ -185,8 +186,13 @@ def run() -> None:
     lobsters_count = backfill_lobsters(db)
 
     total = hn_count + devto_count + lobsters_count
-    logger.info("Backfill complete: %d total mentions (HN=%d, Dev.to=%d, Lobsters=%d)",
-                total, hn_count, devto_count, lobsters_count)
+    logger.info(
+        "Backfill complete: %d total mentions (HN=%d, Dev.to=%d, Lobsters=%d)",
+        total,
+        hn_count,
+        devto_count,
+        lobsters_count,
+    )
 
 
 if __name__ == "__main__":

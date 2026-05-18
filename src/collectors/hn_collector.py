@@ -34,7 +34,7 @@ class HNCollector(BaseCollector):
             params={
                 "tags": "story",
                 "numericFilters": f"created_at_i>{since},points>50",
-                "hitsPerPage": 30,
+                "hitsPerPage": "30",
             },
             timeout=10,
         )

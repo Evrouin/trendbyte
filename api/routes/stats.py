@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from api.db import get_db
@@ -10,7 +12,7 @@ router = APIRouter(tags=["stats"])
 
 
 @router.get("/stats")
-def get_stats():
+def get_stats() -> dict[str, Any]:
     """Get overall system statistics."""
     conn = get_db()
 
@@ -22,9 +24,9 @@ def get_stats():
 
     conn.close()
     return {
-        "total_mentions": mentions["total"],
-        "total_trends": trends["total"],
-        "total_predictions": predictions["total"],
+        "total_mentions": mentions["total"] if mentions else 0,
+        "total_trends": trends["total"] if trends else 0,
+        "total_predictions": predictions["total"] if predictions else 0,
         "active_sources": [r["source"] for r in sources],
-        "last_run": latest_run["last_run"],
+        "last_run": latest_run["last_run"] if latest_run else None,
     }

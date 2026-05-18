@@ -77,7 +77,7 @@ class TwitterBot:
         """Post a thread of tweets, first one optionally with an image."""
         previous_id = None
         for i, text in enumerate(tweets):
-            kwargs: dict = {"text": text}
+            kwargs: dict[str, object] = {"text": text}
             if previous_id:
                 kwargs["in_reply_to_tweet_id"] = previous_id
             if i == 0 and image_path:

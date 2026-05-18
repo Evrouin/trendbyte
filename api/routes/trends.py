@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Query
 
 from api.db import get_db
@@ -14,7 +16,7 @@ def get_trends(
     category: str | None = Query(None, description="Filter by category"),
     days: int = Query(7, description="Timeframe in days"),
     limit: int = Query(10, description="Max results"),
-):
+) -> dict[str, Any]:
     """Get top trends with optional category and timeframe filters."""
     conn = get_db()
     query = (
@@ -23,7 +25,7 @@ def get_trends(
         "FROM trends, unnest(sources) as unnest_sources "
         "WHERE calculated_at > NOW() - INTERVAL '%s days' "
     )
-    params: list = [days]
+    params: list[Any] = [days]
 
     if category:
         query += (
@@ -45,7 +47,7 @@ def get_trends(
 def get_trends_by_category(
     days: int = Query(7, description="Timeframe in days"),
     limit: int = Query(5, description="Max results per category"),
-):
+) -> dict[str, Any]:
     """Get top trends grouped by category."""
     conn = get_db()
 
@@ -75,7 +77,7 @@ def get_trends_by_category(
 
 
 @router.get("/trends/{name}")
-def get_trend_detail(name: str):
+def get_trend_detail(name: str) -> dict[str, Any]:
     """Get a single trend with time-series history and related posts."""
     conn = get_db()
 
@@ -104,7 +106,7 @@ def get_trend_detail(name: str):
     conn.close()
 
     if not current:
-        return {"error": "Trend not found"}, 404
+        return {"error": "Trend not found"}
 
     return {
         "trend": dict(current),

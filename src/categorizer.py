@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from src.logger import Logger
 
 logger = Logger.get(__name__)
@@ -126,7 +128,7 @@ DEFAULT_CATEGORIES: dict[str, set[str]] = {
 class Categorizer:
     """DB-backed categorizer with dynamic keyword management."""
 
-    def __init__(self, db_conn=None) -> None:
+    def __init__(self, db_conn: Any = None) -> None:
         self._conn = db_conn
         self._cache: dict[str, set[str]] | None = None
 

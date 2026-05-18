@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter
 
 from api.db import get_db
@@ -10,7 +12,7 @@ router = APIRouter(tags=["categories"])
 
 
 @router.get("/categories")
-def get_categories():
+def get_categories() -> dict[str, Any]:
     """List all categories with keyword count and top trends."""
     conn = get_db()
 

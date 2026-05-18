@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -30,7 +31,7 @@ class TrainingPipeline:
         self._db_url = database_url
         self._predictor = TrendPredictor()
 
-    def run(self) -> dict:
+    def run(self) -> dict[str, Any]:
         """Execute full training pipeline. Returns metrics."""
         logger.info("Starting training pipeline")
 
@@ -65,7 +66,7 @@ class TrainingPipeline:
             "improved": new_accuracy > old_accuracy,
         }
 
-    def _label_predictions(self) -> list[dict]:
+    def _label_predictions(self) -> list[dict[str, Any]]:
         """Label past predictions: did the tech actually trend within 7 days?"""
         conn = psycopg.connect(self._db_url, row_factory=dict_row)
 
@@ -104,7 +105,9 @@ class TrainingPipeline:
         logger.info("Labeled %d predictions", len(labeled))
         return labeled
 
-    def _build_training_set(self, labeled: list[dict]) -> tuple[list[list[float]], list[int]]:
+    def _build_training_set(
+        self, labeled: list[dict[str, Any]]
+    ) -> tuple[list[list[float]], list[int]]:
         """Build feature vectors from historical mentions for labeled items."""
         conn = psycopg.connect(self._db_url, row_factory=dict_row)
 
@@ -143,7 +146,7 @@ class TrainingPipeline:
                     min(row["has_lobsters"], 1),
                 ]
             )
-            labels.append(item["label"])
+            labels.append(int(item["label"]))
 
         conn.close()
         return features, labels
@@ -196,7 +199,7 @@ class TrainingPipeline:
     @staticmethod
     def _sigmoid(x: float) -> float:
         x = max(min(x, 500), -500)
-        return 1 / (1 + 2.718 ** (-x))
+        return float(1 / (1 + 2.718 ** (-x)))
 
 
 def train() -> None:

@@ -19,7 +19,7 @@ class TrendScorer:
             grouped.setdefault(key, []).append(m)
 
         trends: list[Trend] = []
-        for key, items in grouped.items():
+        for _key, items in grouped.items():
             total_stars = sum(m.stars or 0 for m in items)
             sources = list({m.source for m in items})
             best = max(items, key=lambda m: m.score)

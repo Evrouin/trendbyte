@@ -19,7 +19,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 app.add_middleware(
     CORSMiddleware,
@@ -37,5 +37,5 @@ app.include_router(news.router, prefix="/api")
 
 
 @app.get("/")
-def root():
+def root() -> dict[str, str]:
     return {"name": "TrendByte API", "version": "0.1.0", "docs": "/docs"}

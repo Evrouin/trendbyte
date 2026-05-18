@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import requests
 
 from src.collectors import BaseCollector
@@ -57,10 +59,10 @@ class DevtoCollector(BaseCollector):
         logger.info("Collected mentions", extra={"source": "devto", "count": len(mentions)})
         return mentions
 
-    def _extract_tech_name(self, article: dict) -> str:
+    def _extract_tech_name(self, article: dict[str, Any]) -> str:
         """Extract tech name from tags or title using NER."""
         tags = article.get("tag_list", [])
         for tag in tags:
             if is_valid_tech_name(tag):
-                return tag
+                return str(tag)
         return extract_best_tech_name(article.get("title", ""))
