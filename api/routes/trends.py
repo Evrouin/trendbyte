@@ -39,8 +39,21 @@ def get_trends(
     params.append(limit)
 
     rows = conn.execute(query, params).fetchall()
+
+    trends = []
+    for r in rows:
+        cat = conn.execute(
+            "SELECT c.name FROM categories c "
+            "JOIN category_keywords ck ON c.id = ck.category_id "
+            "WHERE ck.keyword = LOWER(%s) LIMIT 1",
+            (r["name"],),
+        ).fetchone()
+        trend = dict(r)
+        trend["category"] = cat["name"] if cat else None
+        trends.append(trend)
+
     conn.close()
-    return {"trends": [dict(r) for r in rows], "count": len(rows)}
+    return {"trends": trends, "count": len(trends)}
 
 
 @router.get("/trends/by-category")
