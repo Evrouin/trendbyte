@@ -9,11 +9,15 @@ from src.analysis import TrendScorer
 from src.analysis.rising_stars import RisingStarDetector
 from src.bot import TwitterBot
 from src.collectors import BaseCollector
+from src.collectors.arxiv_collector import ArxivCollector
 from src.collectors.devto_collector import DevtoCollector
 from src.collectors.github_collector import GitHubCollector
+from src.collectors.github_trending_collector import GithubTrendingCollector
 from src.collectors.hn_collector import HNCollector
 from src.collectors.lobsters_collector import LobstersCollector
+from src.collectors.mastodon_collector import MastodonCollector
 from src.collectors.reddit_collector import RedditCollector
+from src.collectors.stackoverflow_collector import StackOverflowCollector
 from src.config import Config
 from src.gateway import DatabaseGateway
 from src.logger import Logger
@@ -47,12 +51,16 @@ def run(dry_run: bool = False) -> None:
 
     collectors: list[BaseCollector] = [
         GitHubCollector(config.github_token),
+        GithubTrendingCollector(),
         RedditCollector(
             config.reddit_client_id, config.reddit_client_secret, config.reddit_user_agent
         ),
         HNCollector(),
         DevtoCollector(),
         LobstersCollector(),
+        StackOverflowCollector(),
+        ArxivCollector(),
+        MastodonCollector(),
     ]
 
     scorer = TrendScorer()
