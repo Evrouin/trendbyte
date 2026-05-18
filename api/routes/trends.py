@@ -116,6 +116,15 @@ def get_trend_detail(name: str) -> dict[str, Any]:
         (name,),
     ).fetchall()
 
+    related = conn.execute(
+        "SELECT t2.name, AVG(t2.score) as score "
+        "FROM trends t1 "
+        "JOIN trends t2 ON t2.calculated_at = t1.calculated_at AND t2.name != t1.name "
+        "WHERE LOWER(t1.name) = LOWER(%s) "
+        "GROUP BY t2.name ORDER BY score DESC LIMIT 5",
+        (name,),
+    ).fetchall()
+
     conn.close()
 
     if not current:
@@ -125,4 +134,5 @@ def get_trend_detail(name: str) -> dict[str, Any]:
         "trend": dict(current),
         "history": [dict(r) for r in history],
         "posts": [dict(r) for r in posts],
+        "related": [dict(r) for r in related],
     }
