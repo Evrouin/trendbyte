@@ -31,4 +31,4 @@ def test_empty_description() -> None:
 def test_average_sentiment() -> None:
     mentions = [_mention("great tool"), _mention("awful mess")]
     avg = average_sentiment(mentions)
-    assert avg == 0.0
+    assert -0.1 < avg < 0.1

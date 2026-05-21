@@ -1,84 +1,19 @@
-"""Lightweight sentiment analysis — no heavy dependencies."""
+"""Sentiment analysis using VADER — optimized for short social media text."""
 
 from __future__ import annotations
 
+from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+
 from src.models import Mention
 
-POSITIVE = {
-    "amazing",
-    "awesome",
-    "best",
-    "better",
-    "brilliant",
-    "clean",
-    "easy",
-    "elegant",
-    "excellent",
-    "fast",
-    "fantastic",
-    "good",
-    "great",
-    "impressive",
-    "incredible",
-    "innovative",
-    "love",
-    "modern",
-    "nice",
-    "perfect",
-    "powerful",
-    "simple",
-    "solid",
-    "stable",
-    "superb",
-    "useful",
-    "wonderful",
-}
-
-NEGATIVE = {
-    "awful",
-    "bad",
-    "broken",
-    "buggy",
-    "complex",
-    "confusing",
-    "crash",
-    "dead",
-    "deprecated",
-    "difficult",
-    "disappointing",
-    "error",
-    "fail",
-    "flawed",
-    "horrible",
-    "insecure",
-    "issue",
-    "lack",
-    "mess",
-    "outdated",
-    "painful",
-    "poor",
-    "problem",
-    "slow",
-    "terrible",
-    "ugly",
-    "unstable",
-    "vulnerability",
-    "weak",
-    "worst",
-}
+_analyzer = SentimentIntensityAnalyzer()
 
 
 def analyze_sentiment(mention: Mention) -> float:
-    """Return sentiment score (-1.0 to 1.0) based on keyword matching."""
+    """Return sentiment score (-1.0 to 1.0) using VADER compound score."""
     if not mention.description:
         return 0.0
-    words = set(mention.description.lower().split())
-    pos = len(words & POSITIVE)
-    neg = len(words & NEGATIVE)
-    total = pos + neg
-    if total == 0:
-        return 0.0
-    return round((pos - neg) / total, 3)
+    return _analyzer.polarity_scores(mention.description)["compound"]
 
 
 def average_sentiment(mentions: list[Mention]) -> float:
