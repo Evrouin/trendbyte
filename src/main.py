@@ -9,7 +9,6 @@ from src.analysis import TrendScorer
 from src.analysis.rising_stars import RisingStarDetector
 from src.bot import TwitterBot
 from src.collectors import BaseCollector
-from src.collectors.arxiv_collector import ArxivCollector
 from src.collectors.devto_collector import DevtoCollector
 from src.collectors.github_collector import GitHubCollector
 from src.collectors.github_trending_collector import GithubTrendingCollector
@@ -59,7 +58,6 @@ def run(dry_run: bool = False) -> None:
         DevtoCollector(),
         LobstersCollector(),
         StackOverflowCollector(),
-        ArxivCollector(),
         MastodonCollector(),
     ]
 

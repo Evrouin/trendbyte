@@ -14,7 +14,7 @@ from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
 
-ARXIV_URL = "https://export.arxiv.org/api/query"
+ARXIV_URL = "https://arxiv.org/api/query"
 CATEGORIES = ["cs.AI", "cs.LG", "cs.CL", "cs.PL"]
 
 
@@ -25,9 +25,12 @@ class ArxivCollector(BaseCollector):
     def source_name(self) -> str:
         return "arxiv"
 
-    @retry(max_attempts=3, backoff=2.0)
+    @retry(max_attempts=3, backoff=5.0)
     def collect(self) -> list[Mention]:
         """Fetch recent papers and extract tech names from titles."""
+        import time
+
+        time.sleep(3)
         query = " OR ".join(f"cat:{cat}" for cat in CATEGORIES)
         response = requests.get(
             ARXIV_URL,
@@ -37,7 +40,7 @@ class ArxivCollector(BaseCollector):
                 "sortOrder": "descending",
                 "max_results": "50",
             },
-            timeout=15,
+            timeout=30,
         )
 
         if response.status_code == 429:

@@ -21,7 +21,7 @@ class GithubTrendingCollector(BaseCollector):
 
     @property
     def source_name(self) -> str:
-        return "github_trending"
+        return "github"
 
     @retry(max_attempts=3, backoff=2.0)
     def collect(self) -> list[Mention]:
