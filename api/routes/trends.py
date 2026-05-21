@@ -6,12 +6,14 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
+from api.cache import cached
 from api.db import get_db
 
 router = APIRouter(tags=["trends"])
 
 
 @router.get("/trends")
+@cached
 def get_trends(
     category: str | None = Query(None, description="Filter by category"),
     days: int = Query(7, description="Timeframe in days"),
@@ -57,6 +59,7 @@ def get_trends(
 
 
 @router.get("/trends/by-category")
+@cached
 def get_trends_by_category(
     days: int = Query(7, description="Timeframe in days"),
     limit: int = Query(5, description="Max results per category"),

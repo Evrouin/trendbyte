@@ -6,12 +6,14 @@ from typing import Any
 
 from fastapi import APIRouter
 
+from api.cache import cached
 from api.db import get_db
 
 router = APIRouter(tags=["stats"])
 
 
 @router.get("/stats")
+@cached
 def get_stats() -> dict[str, Any]:
     """Get overall system statistics."""
     conn = get_db()

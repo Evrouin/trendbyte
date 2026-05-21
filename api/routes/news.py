@@ -6,12 +6,14 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
+from api.cache import cached
 from api.db import get_db
 
 router = APIRouter(tags=["news"])
 
 
 @router.get("/news")
+@cached
 def get_latest_news(
     source: str | None = Query(None, description="Filter by source"),
     limit: int = Query(20, description="Max results"),

@@ -6,12 +6,14 @@ from typing import Any
 
 from fastapi import APIRouter, Query
 
+from api.cache import cached
 from api.db import get_db
 
 router = APIRouter(tags=["predictions"])
 
 
 @router.get("/predictions")
+@cached
 def get_predictions(
     min_confidence: float = Query(0.4, description="Minimum confidence threshold"),
     limit: int = Query(10, description="Max results"),

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 
 
 @dataclass(frozen=True)
@@ -17,7 +17,7 @@ class Mention:
     stars: int | None = None
     forks: int | None = None
     score: float = 0.0
-    collected_at: datetime = field(default_factory=datetime.utcnow)
+    collected_at: datetime = field(default_factory=lambda: datetime.now(UTC))
 
 
 @dataclass(frozen=True)
@@ -40,4 +40,4 @@ class Post:
     tweet_id: str
     tweet_text: str
     image_path: str | None = None
-    posted_at: datetime = field(default_factory=datetime.utcnow)
+    posted_at: datetime = field(default_factory=lambda: datetime.now(UTC))
