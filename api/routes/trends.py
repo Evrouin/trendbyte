@@ -23,7 +23,7 @@ def get_trends(
         "SELECT name, SUM(mentions) as mentions, AVG(score) as score, "
         "AVG(growth_pct) as growth_pct, array_agg(DISTINCT unnest_sources) as sources "
         "FROM trends, unnest(sources) as unnest_sources "
-        "WHERE calculated_at > NOW() - INTERVAL '%s days' "
+        "WHERE calculated_at > NOW() - make_interval(days => %s) "
     )
     params: list[Any] = [days]
 
@@ -73,7 +73,7 @@ def get_trends_by_category(
             "FROM trends t "
             "WHERE LOWER(t.name) IN ("
             "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
-            ") AND t.calculated_at > NOW() - INTERVAL '%s days' "
+            ") AND t.calculated_at > NOW() - make_interval(days => %s) "
             "GROUP BY t.name ORDER BY score DESC LIMIT %s",
             (cat["id"], days, limit),
         ).fetchall()

@@ -77,7 +77,7 @@ class DatabaseGateway:
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT DISTINCT trend_name FROM posts "
-                "WHERE posted_at > NOW() - INTERVAL '%s days'",
+                "WHERE posted_at > NOW() - make_interval(days => %s)",
                 (days,),
             ).fetchall()
         return [row["trend_name"] for row in rows]
@@ -97,7 +97,7 @@ class DatabaseGateway:
         """Get tweet IDs from the last N days."""
         with self._connect() as conn:
             rows = conn.execute(
-                "SELECT tweet_id FROM posts WHERE posted_at > NOW() - INTERVAL '%s days'",
+                "SELECT tweet_id FROM posts WHERE posted_at > NOW() - make_interval(days => %s)",
                 (days,),
             ).fetchall()
         return [row["tweet_id"] for row in rows]
@@ -110,7 +110,7 @@ class DatabaseGateway:
             rows = conn.execute(
                 "SELECT source, name, url, description, stars, forks, score, collected_at "
                 "FROM mentions WHERE collected_at < NOW() - INTERVAL '1 day' "
-                "AND collected_at > NOW() - INTERVAL '%s days'",
+                "AND collected_at > NOW() - make_interval(days => %s)",
                 (days,),
             ).fetchall()
         return [
