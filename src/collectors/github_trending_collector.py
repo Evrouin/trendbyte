@@ -73,16 +73,20 @@ class GithubTrendingCollector(BaseCollector):
 
         mentions: list[Mention] = []
         lines = response.text.split("\n")
+        current_repo = ""
         for line in lines:
+            if 'href="/' in line and "/stargazers" not in line and 'class="Link"' in line:
+                href = line.split('href="')[1].split('"')[0] if 'href="' in line else ""
+                if href.count("/") == 2:
+                    current_repo = f"https://github.com{href}"
             if 'itemprop="programmingLanguage"' in line:
-                lang = line.strip().replace("<span", "").replace("</span>", "").strip()
-                lang = lang.split(">")[-1].strip() if ">" in lang else lang
+                lang = line.strip().split(">")[-1].replace("</span>", "").strip()
                 if is_valid_tech_name(lang):
                     mentions.append(
                         Mention(
                             source=self.source_name,
                             name=to_display_name(lang),
-                            url="https://github.com/trending",
+                            url=current_repo or "https://github.com/trending",
                             description=f"Trending in {lang}",
                             stars=0,
                             score=0.0,
