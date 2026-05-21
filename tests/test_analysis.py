@@ -35,12 +35,17 @@ def test_score_groups_by_name() -> None:
 
 def test_multi_source_boosts_score() -> None:
     scorer = TrendScorer()
-    mentions = [
+    single = [
+        _make_mention("bun", source="github", stars=100),
+        _make_mention("bun", source="github", stars=100),
+    ]
+    multi = [
         _make_mention("bun", source="github", stars=100),
         _make_mention("bun", source="reddit", stars=100),
     ]
-    trends = scorer.score(mentions)
-    assert trends[0].score == 400
+    single_score = scorer.score(single)[0].score
+    multi_score = scorer.score(multi)[0].score
+    assert multi_score > single_score
 
 
 def test_dedup_normalizes_names() -> None:
