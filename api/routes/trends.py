@@ -78,6 +78,16 @@ def get_trends_by_category(
             (cat["id"], days, limit),
         ).fetchall()
 
+        if not rows:
+            rows = conn.execute(
+                "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score "
+                "FROM trends t "
+                "WHERE LOWER(t.name) IN ("
+                "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
+                ") GROUP BY t.name ORDER BY score DESC LIMIT 1",
+                (cat["id"],),
+            ).fetchall()
+
         result.append(
             {
                 "category": cat["name"],
