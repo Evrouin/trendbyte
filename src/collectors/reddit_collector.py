@@ -6,8 +6,10 @@ import praw
 from prawcore.exceptions import ResponseException
 
 from src.collectors import BaseCollector
+from src.display_names import to_display_name
 from src.logger import Logger
 from src.models import Mention
+from src.ner import extract_best_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
@@ -38,10 +40,13 @@ class RedditCollector(BaseCollector):
             try:
                 subreddit = self._reddit.subreddit(sub_name)
                 for post in subreddit.top(time_filter="week", limit=10):
+                    name = extract_best_tech_name(post.title)
+                    if not name:
+                        continue
                     mentions.append(
                         Mention(
                             source=self.source_name,
-                            name=self._extract_tech_name(post.title),
+                            name=to_display_name(name),
                             url=post.url,
                             description=post.title,
                             stars=post.score,
@@ -55,12 +60,3 @@ class RedditCollector(BaseCollector):
 
         logger.info("Collected mentions", extra={"source": "reddit", "count": len(mentions)})
         return mentions
-
-    def _extract_tech_name(self, title: str) -> str:
-        """Extract the most likely technology name from a post title."""
-        words = title.split()
-        for word in words:
-            cleaned = word.strip(",:;!?()[]")
-            if cleaned and cleaned[0].isupper() and len(cleaned) > 2:
-                return cleaned
-        return words[0] if words else "unknown"
