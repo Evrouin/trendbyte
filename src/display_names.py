@@ -170,3 +170,14 @@ DISPLAY_NAMES: dict[str, str] = {
 def to_display_name(name: str) -> str:
     """Convert a tech name to its canonical display form."""
     return DISPLAY_NAMES.get(name.lower().strip(), name)
+
+
+# Additional entries
+DISPLAY_NAMES.update(
+    {
+        "assembly": "Assembly",
+        "fiber": "Fiber",
+        "rocket": "Rocket",
+        "transformers": "Transformers",
+    }
+)
