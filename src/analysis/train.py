@@ -209,6 +209,14 @@ def train() -> None:
     result = pipeline.run()
     logger.info("Training result: %s", json.dumps(result))
 
+    try:
+        from src.analysis.classifier import train as train_classifier
+
+        train_classifier()
+        logger.info("Category classifier trained successfully")
+    except Exception as e:
+        logger.warning("Category classifier training failed: %s", e)
+
 
 if __name__ == "__main__":
     train()

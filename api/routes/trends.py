@@ -161,9 +161,39 @@ def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
     if not current:
         return {"error": "Trend not found"}
 
+    # Lifecycle prediction
+    lifecycle: dict[str, Any] = {}
+    try:
+        from src.analysis.lifecycle import predict_lifecycle
+
+        lifecycle = predict_lifecycle(name)
+    except Exception:
+        pass
+
+    # Merge correlated trends into related
+    related_list = [dict(r) for r in related]
+    try:
+        from src.analysis.correlation import find_correlations
+
+        correlated = find_correlations()
+        name_lower = name.lower()
+        seen = {r["name"].lower() for r in related_list}
+        for pair in correlated:
+            other = (
+                pair["tech_b"]
+                if pair["tech_a"] == name_lower
+                else (pair["tech_a"] if pair["tech_b"] == name_lower else None)
+            )
+            if other and other not in seen:
+                related_list.append({"name": other, "score": pair["correlation"]})
+                seen.add(other)
+    except Exception:
+        pass
+
     return {
         "trend": dict(current),
         "history": [dict(r) for r in history],
         "posts": [dict(r) for r in posts],
-        "related": [dict(r) for r in related],
+        "related": related_list,
+        "lifecycle": lifecycle,
     }

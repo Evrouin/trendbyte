@@ -185,7 +185,18 @@ class Categorizer:
         categories = self._get_categories()
         normalized = name.lower().strip()
         matches = [cat for cat, keywords in categories.items() if normalized in keywords]
-        return matches if matches else ["other"]
+        if matches:
+            return matches
+        try:
+            from src.analysis.classifier import predict_proba
+
+            proba = predict_proba(normalized)
+            best_cat = max(proba, key=proba.get)  # type: ignore[arg-type]
+            if best_cat != "other" and proba[best_cat] > 0.4:
+                return [best_cat]
+        except Exception:
+            pass
+        return ["other"]
 
     def add_keyword(self, category: str, keyword: str) -> None:
         """Add a new keyword to a category."""
