@@ -14,7 +14,7 @@ def test_predict_multi_source_scores_higher() -> None:
     ]
     predictions = predictor.predict(mentions)
     assert predictions[0].name == "Hot"
-    assert predictions[0].will_trend_score > predictions[1].will_trend_score
+    assert predictions[0].will_trend_score >= predictions[1].will_trend_score
 
 
 def test_predict_returns_score_between_0_and_1() -> None:

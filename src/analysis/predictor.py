@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -108,7 +109,8 @@ class TrendPredictor:
             + f.has_devto * w["has_devto"]
             + f.has_lobsters * w["has_lobsters"]
         )
-        return float(round(1 / (1 + 2.718 ** (-raw)), 4))
+        clamped = max(-500, min(500, raw))
+        return float(round(1 / (1 + math.exp(-clamped)), 4))
 
     def _load_weights(self) -> dict[str, float]:
         """Load model weights from JSON or use defaults."""
