@@ -39,7 +39,7 @@ def train() -> None:
     pipe = Pipeline(
         [
             ("tfidf", TfidfVectorizer(max_features=5000, stop_words="english")),
-            ("clf", LogisticRegression(max_iter=1000, solver="lbfgs", multi_class="auto")),
+            ("clf", LogisticRegression(max_iter=1000, solver="lbfgs")),
         ]
     )
     pipe.fit(X, y)
