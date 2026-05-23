@@ -54,11 +54,23 @@ api/
 |----------|-------------|
 | `GET /api/trends` | Top trends (filterable by days, limit, category) |
 | `GET /api/trends/{name}` | Trend detail with score history and related trends |
+| `GET /api/trends/{name}/lifecycle` | Trend lifecycle phase (rising, peaking, stable, declining) |
 | `GET /api/trends/by-category` | Trends grouped by category |
 | `GET /api/predictions` | Rising star predictions |
+| `GET /api/correlations` | Top correlated tech pairs |
 | `GET /api/categories` | All categories with keywords |
+| `GET /api/categories/predict?text=` | ML-predicted category for text |
 | `GET /api/stats` | System stats (totals, sources, last run) |
 | `GET /api/news` | Recent posts with source and date range filters |
+
+## ML Features
+
+- **Trend Scoring** — time-decayed, star-normalized, source-diversity-boosted scoring
+- **VADER Sentiment** — social media optimized sentiment analysis on post titles
+- **Rising Star Predictor** — gradient descent model, auto-trains weekly from labeled outcomes
+- **Lifecycle Detection** — classifies trends as rising, peaking, stable, or declining via linear regression
+- **Category Classifier** — TF-IDF + Logistic Regression predicts category from post text
+- **Correlation Detection** — finds techs that trend together using Pearson correlation on weekly patterns
 
 ## Scoring Algorithm
 
