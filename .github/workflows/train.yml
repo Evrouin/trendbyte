@@ -33,6 +33,6 @@ jobs:
         run: |
           git config user.name "Evrouin"
           git config user.email "elwaycortez@gmail.com"
-          git add models/trend_model.json models/category_model.pkl
+          git add -f models/ 2>/dev/null || true
           git diff --cached --quiet || git commit -m "chore: update model weights"
           git push
