@@ -128,16 +128,23 @@ class DatabaseGateway:
         ]
 
     def save_predictions(self, rising_stars: list[Any]) -> None:
-        """Store rising star predictions."""
+        """Store rising star predictions, skipping duplicates from same day."""
+        from src.display_names import to_display_name
+
         with self._connect() as conn:
             for star in rising_stars:
+                name = to_display_name(star.name)
                 conn.execute(
                     "INSERT INTO predictions (name, confidence, signals, url) "
-                    "VALUES (%s, %s, %s, %s)",
-                    (star.name, star.confidence, star.signals, star.url),
+                    "SELECT %s, %s, %s, %s "
+                    "WHERE NOT EXISTS ("
+                    "  SELECT 1 FROM predictions WHERE name = %s "
+                    "  AND predicted_at > NOW() - INTERVAL '1 day'"
+                    ")",
+                    (name, star.confidence, star.signals, star.url, name),
                 )
             conn.commit()
-        logger.info("Saved %d predictions", len(rising_stars))
+        logger.info("Saved predictions (deduped)", extra={"count": len(rising_stars)})
 
     def save_analytics(self, metrics: Any) -> None:
         """Store tweet engagement metrics."""
