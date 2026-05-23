@@ -16,7 +16,7 @@ router = APIRouter(tags=["predictions"])
 @cached
 def get_predictions(
     min_confidence: float = Query(0.4, description="Minimum confidence threshold"),
-    limit: int = Query(10, description="Max results"),
+    limit: int = Query(10, ge=1, le=100, description="Max results"),
 ) -> dict[str, Any]:
     """Get rising star predictions with confidence scores."""
     conn = get_db()

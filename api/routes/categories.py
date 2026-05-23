@@ -12,7 +12,9 @@ router = APIRouter(tags=["categories"])
 
 
 @router.get("/categories/predict")
-def predict_category(text: str = Query(..., description="Text to classify")) -> dict[str, Any]:
+def predict_category(
+    text: str = Query(..., max_length=200, description="Text to classify"),
+) -> dict[str, Any]:
     """Predict category for a given text description."""
     from src.analysis.classifier import predict, predict_proba
 

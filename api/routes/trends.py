@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Path, Query
 
 from api.cache import cached
 from api.db import get_db
@@ -25,9 +25,9 @@ def get_correlations() -> dict[str, Any]:
 @router.get("/trends")
 @cached
 def get_trends(
-    category: str | None = Query(None, description="Filter by category"),
-    days: int = Query(7, description="Timeframe in days"),
-    limit: int = Query(10, description="Max results"),
+    category: str | None = Query(None, max_length=200, description="Filter by category"),
+    days: int = Query(7, ge=1, le=365, description="Timeframe in days"),
+    limit: int = Query(10, ge=1, le=100, description="Max results"),
 ) -> dict[str, Any]:
     """Get top trends with optional category and timeframe filters."""
     conn = get_db()
@@ -71,8 +71,8 @@ def get_trends(
 @router.get("/trends/by-category")
 @cached
 def get_trends_by_category(
-    days: int = Query(7, description="Timeframe in days"),
-    limit: int = Query(5, description="Max results per category"),
+    days: int = Query(7, ge=1, le=365, description="Timeframe in days"),
+    limit: int = Query(5, ge=1, le=100, description="Max results per category"),
 ) -> dict[str, Any]:
     """Get top trends grouped by category."""
     conn = get_db()
@@ -113,7 +113,7 @@ def get_trends_by_category(
 
 
 @router.get("/trends/{name}/lifecycle")
-def get_trend_lifecycle(name: str) -> dict[str, Any]:
+def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str, Any]:
     """Get lifecycle phase prediction for a trend."""
     from src.analysis.lifecycle import predict_lifecycle
 
@@ -121,7 +121,7 @@ def get_trend_lifecycle(name: str) -> dict[str, Any]:
 
 
 @router.get("/trends/{name}")
-def get_trend_detail(name: str) -> dict[str, Any]:
+def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
     """Get a single trend with time-series history and related posts."""
     conn = get_db()
 
