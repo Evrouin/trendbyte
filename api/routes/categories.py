@@ -4,11 +4,19 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Query
 
 from api.db import get_db
 
 router = APIRouter(tags=["categories"])
+
+
+@router.get("/categories/predict")
+def predict_category(text: str = Query(..., description="Text to classify")) -> dict[str, Any]:
+    """Predict category for a given text description."""
+    from src.analysis.classifier import predict, predict_proba
+
+    return {"category": predict(text), "probabilities": predict_proba(text)}
 
 
 @router.get("/categories")

@@ -12,6 +12,16 @@ from api.db import get_db
 router = APIRouter(tags=["trends"])
 
 
+@router.get("/correlations")
+@cached
+def get_correlations() -> dict[str, Any]:
+    """Get top 20 correlated tech pairs."""
+    from src.analysis.correlation import find_correlations
+
+    pairs = find_correlations()[:20]
+    return {"correlations": pairs, "count": len(pairs)}
+
+
 @router.get("/trends")
 @cached
 def get_trends(
@@ -100,6 +110,14 @@ def get_trends_by_category(
 
     conn.close()
     return {"categories": result}
+
+
+@router.get("/trends/{name}/lifecycle")
+def get_trend_lifecycle(name: str) -> dict[str, Any]:
+    """Get lifecycle phase prediction for a trend."""
+    from src.analysis.lifecycle import predict_lifecycle
+
+    return predict_lifecycle(name)
 
 
 @router.get("/trends/{name}")

@@ -1,1 +1,4 @@
 vaderSentiment
+scikit-learn
+joblib
+numpy

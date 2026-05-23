@@ -106,6 +106,13 @@ def run(dry_run: bool = False) -> None:
 
     db.save_trends(trends[:10])
 
+    # Compute lifecycle for top 10 trends
+    from src.analysis.lifecycle import predict_lifecycle
+
+    for t in trends[:10]:
+        lc = predict_lifecycle(t.name)
+        logger.info("Lifecycle %s: phase=%s momentum=%.4f", lc["name"], lc["phase"], lc["momentum"])
+
     today = datetime.utcnow().strftime("%B %d, %Y")
     image = renderer.render_trending_card(
         trends=[
