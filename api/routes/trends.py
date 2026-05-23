@@ -171,7 +171,9 @@ def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
         pass
 
     # Merge correlated trends into related
-    related_list = [dict(r) for r in related]
+    from src.display_names import to_display_name
+
+    related_list = [{"name": to_display_name(r["name"]), "score": r["score"]} for r in related]
     try:
         from src.analysis.correlation import find_correlations
 
@@ -184,9 +186,9 @@ def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
                 if pair["tech_a"] == name_lower
                 else (pair["tech_a"] if pair["tech_b"] == name_lower else None)
             )
-            if other and other not in seen:
-                related_list.append({"name": other, "score": pair["correlation"]})
-                seen.add(other)
+            if other and other.lower() not in seen:
+                related_list.append({"name": to_display_name(other), "score": pair["correlation"]})
+                seen.add(other.lower())
     except Exception:
         pass
 
