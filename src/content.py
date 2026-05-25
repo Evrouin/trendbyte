@@ -83,7 +83,8 @@ class ContentGenerator:
 
             rising_tool = conn.execute(
                 "SELECT name, growth_pct FROM trends WHERE calculated_at >= %s "
-                "AND growth_pct > 0 ORDER BY growth_pct DESC LIMIT 1",
+                "AND growth_pct > 0 AND growth_pct < 1000 "
+                "AND mentions >= 3 ORDER BY growth_pct DESC LIMIT 1",
                 (since,),
             ).fetchone()
 
