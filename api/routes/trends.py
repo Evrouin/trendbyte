@@ -22,6 +22,15 @@ def get_correlations() -> dict[str, Any]:
     return {"correlations": pairs, "count": len(pairs)}
 
 
+@router.get("/trends/names")
+def get_trend_names() -> dict[str, Any]:
+    """Get all unique trend names for autocomplete."""
+    conn = get_db()
+    rows = conn.execute("SELECT DISTINCT name FROM trends ORDER BY name").fetchall()
+    conn.close()
+    return {"names": [r["name"] for r in rows]}
+
+
 @router.get("/trends")
 @cached
 def get_trends(
