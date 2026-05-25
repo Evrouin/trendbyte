@@ -107,14 +107,18 @@ class ContentGenerator:
         ]
         avg_sent = average_sentiment(mentions_objs)
 
-        # Per-trend sentiment
+        # Per-trend sentiment (require 3+ mentions)
         trend_sentiments: dict[str, list[float]] = {}
         for m in mentions_objs:
             s = analyze_sentiment(m)
             trend_sentiments.setdefault(m.name, []).append(s)
 
-        trend_avgs = {k: sum(v) / len(v) for k, v in trend_sentiments.items() if v}
-        top_positive = max(trend_avgs, key=trend_avgs.get, default="") if trend_avgs else ""  # type: ignore[arg-type]
+        trend_avgs = {k: sum(v) / len(v) for k, v in trend_sentiments.items() if len(v) >= 3}
+        top_positive = max(
+            (k for k, v in trend_avgs.items() if v > 0),
+            key=lambda k: len(trend_sentiments[k]),
+            default="",
+        )
         top_negative = min(trend_avgs, key=trend_avgs.get, default="") if trend_avgs else ""  # type: ignore[arg-type]
 
         # Classify rising tool lifecycle
