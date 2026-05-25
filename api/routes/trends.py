@@ -140,9 +140,10 @@ def get_trend_detail(
 
     if granularity == "daily":
         history = conn.execute(
-            "SELECT mentions, score, growth_pct, calculated_at "
+            "SELECT date_trunc('day', calculated_at) as calculated_at, "
+            "AVG(score) as score, SUM(mentions) as mentions "
             "FROM trends WHERE LOWER(name) = LOWER(%s) "
-            "ORDER BY calculated_at ASC",
+            "GROUP BY 1 ORDER BY 1 ASC",
             (name,),
         ).fetchall()
     else:
