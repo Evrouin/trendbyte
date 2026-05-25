@@ -95,4 +95,5 @@ class TrendScorer:
         older_velocity = len(older) / older_days
         if older_velocity == 0:
             return 100.0
-        return round(((recent_velocity - older_velocity) / older_velocity) * 100, 1)
+        growth = ((recent_velocity - older_velocity) / older_velocity) * 100
+        return round(max(-999.0, min(999.0, growth)), 1)
