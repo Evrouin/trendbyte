@@ -39,7 +39,7 @@ def classify_scores(name: str, scores: list[float]) -> dict[str, str | float]:
 
     recent = scores[-4:]
     slope = _linear_slope(recent)
-    mean = np.mean(recent)
+    mean = float(np.mean(recent))
     threshold = 0.05 * mean if mean else 0.0
 
     # Acceleration: slope of second half minus slope of first half
@@ -48,7 +48,7 @@ def classify_scores(name: str, scores: list[float]) -> dict[str, str | float]:
         mid = len(recent) // 2
         acceleration = _linear_slope(recent[mid:]) - _linear_slope(recent[:mid])
 
-    overall_mean = np.mean(scores)
+    overall_mean = float(np.mean(scores))
 
     if slope > threshold:
         phase = "rising"

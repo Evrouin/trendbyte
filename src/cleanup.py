@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
@@ -36,7 +37,7 @@ class DataCleaner:
         logger.info("Cleanup complete: %s", summary)
         return summary
 
-    def _normalize_mention_names(self, conn: psycopg.Connection) -> int:
+    def _normalize_mention_names(self, conn: psycopg.Connection[Any]) -> int:
         rows = conn.execute("SELECT DISTINCT name FROM mentions").fetchall()
         count = 0
         for row in rows:
@@ -49,7 +50,7 @@ class DataCleaner:
         logger.info("Normalized %d mention names", count)
         return count
 
-    def _merge_duplicate_mentions(self, conn: psycopg.Connection) -> int:
+    def _merge_duplicate_mentions(self, conn: psycopg.Connection[Any]) -> int:
         # Keep the row with the canonical display name for each duplicate URL
         result = conn.execute(
             "DELETE FROM mentions WHERE ctid NOT IN ("
@@ -61,7 +62,7 @@ class DataCleaner:
         logger.info("Merged %d duplicate mentions", count)
         return count
 
-    def _normalize_prediction_names(self, conn: psycopg.Connection) -> int:
+    def _normalize_prediction_names(self, conn: psycopg.Connection[Any]) -> int:
         rows = conn.execute("SELECT DISTINCT name FROM predictions").fetchall()
         count = 0
         for row in rows:
@@ -74,7 +75,7 @@ class DataCleaner:
         logger.info("Normalized %d prediction names", count)
         return count
 
-    def _deduplicate_predictions(self, conn: psycopg.Connection) -> int:
+    def _deduplicate_predictions(self, conn: psycopg.Connection[Any]) -> int:
         result = conn.execute(
             "DELETE FROM predictions WHERE ctid NOT IN ("
             "  SELECT DISTINCT ON (name) ctid FROM predictions"
@@ -86,7 +87,7 @@ class DataCleaner:
         logger.info("Deduped %d predictions", count)
         return count
 
-    def _remove_stale_predictions(self, conn: psycopg.Connection) -> int:
+    def _remove_stale_predictions(self, conn: psycopg.Connection[Any]) -> int:
         cutoff = datetime.now(UTC) - timedelta(days=30)
         result = conn.execute("DELETE FROM predictions WHERE predicted_at < %s", (cutoff,))
         count = result.rowcount or 0
@@ -94,7 +95,7 @@ class DataCleaner:
         logger.info("Removed %d stale predictions", count)
         return count
 
-    def _clean_trends_sources(self, conn: psycopg.Connection) -> int:
+    def _clean_trends_sources(self, conn: psycopg.Connection[Any]) -> int:
         valid = conn.execute("SELECT DISTINCT source FROM mentions").fetchall()
         valid_sources = {r["source"] for r in valid}
 
@@ -113,7 +114,7 @@ class DataCleaner:
         logger.info("Cleaned sources in %d trends", count)
         return count
 
-    def _recategorize_other(self, conn: psycopg.Connection) -> int:
+    def _recategorize_other(self, conn: psycopg.Connection[Any]) -> int:
         from src.categorizer import Categorizer
 
         categorizer = Categorizer(conn)

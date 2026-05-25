@@ -161,6 +161,19 @@ def run(dry_run: bool = False) -> None:
     else:
         logger.warning("Pipeline complete — no tweet posted")
 
+    # Generate and post daily content
+    try:
+        from src.content import ContentGenerator
+
+        content_gen = ContentGenerator(config.database_url)
+        daily_content = content_gen.generate_daily()
+        logger.info("Daily content generated: %s", daily_content.get("headline"))
+
+        if not dry_run and config.twitter_api_key:
+            bot.post_daily(daily_content)
+    except Exception as e:
+        logger.error("Content generation/posting failed: %s", e)
+
 
 if __name__ == "__main__":
     dry = "--dry-run" in sys.argv

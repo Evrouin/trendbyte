@@ -13,7 +13,7 @@ def analyze_sentiment(mention: Mention) -> float:
     """Return sentiment score (-1.0 to 1.0) using VADER compound score."""
     if not mention.description:
         return 0.0
-    return _analyzer.polarity_scores(mention.description)["compound"]
+    return float(_analyzer.polarity_scores(mention.description)["compound"])
 
 
 def average_sentiment(mentions: list[Mention]) -> float:

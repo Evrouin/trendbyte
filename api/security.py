@@ -9,7 +9,8 @@ from os import environ
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.responses import Response
 
 HMAC_SECRET = environ.get("HMAC_SECRET", "")
 MAX_AGE_SECONDS = 300  # 5 minutes
@@ -18,7 +19,7 @@ SKIP_PATHS = ("/", "/docs", "/openapi.json", "/redoc", "/health")
 
 
 class HMACMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         if not HMAC_SECRET or request.url.path in SKIP_PATHS:
             return await call_next(request)
 

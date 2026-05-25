@@ -86,3 +86,57 @@ class TwitterBot:
             response = self._client.create_tweet(**kwargs)
             previous_id = str(response.data["id"])
             logger.info("Thread tweet posted", extra={"tweet_id": previous_id})
+
+    def post_daily(self, content: dict) -> None:
+        """Post a single tweet from daily content."""
+        stat = content.get("stat", {})
+        trend = content.get("trend_name", "")
+        tag = trend.replace(" ", "").replace("-", "")
+        text = (
+            f"{content['headline']}\n\n"
+            f"{stat.get('value', '')} {stat.get('label', '')}\n\n"
+            f"{content.get('takeaway', '')}\n\n"
+            f"#TrendByte #{tag}"
+        )
+        self._client.create_tweet(text=text)
+        logger.info("Posted daily content tweet")
+
+    def post_weekly(self, content: dict) -> None:
+        """Post a 4-tweet thread from weekly content."""
+        tweets = []
+        md = content.get("most_discussed", {})
+        if md:
+            tweets.append(
+                f"📊 Most discussed this week: {md.get('name', '')} ({md.get('mentions', 0)} mentions)"
+            )
+        rt = content.get("rising_tool", {})
+        if rt:
+            tweets.append(f"🚀 Rising tool: {rt.get('name', '')} (+{rt.get('growth_pct', 0):.0f}%)")
+        vibe = content.get("community_vibe", {})
+        if vibe:
+            sentiment = vibe.get("average_sentiment", 0)
+            emoji = "😊" if sentiment > 0 else "😐"
+            tweets.append(
+                f"{emoji} Community vibe: {sentiment:.2f} avg sentiment | Top positive: {vibe.get('top_positive', '')} | Top negative: {vibe.get('top_negative', '')}"
+            )
+        faded = content.get("faded", {})
+        if faded:
+            tweets.append(f"📉 Faded: {faded.get('name', '')} ({faded.get('growth_pct', 0):.0f}%)")
+        if tweets:
+            self.post_thread(tweets)
+
+    def post_monthly(self, content: dict) -> None:
+        """Post big mover + under radar as a thread."""
+        tweets = []
+        bm = content.get("big_mover", {})
+        if bm:
+            tweets.append(
+                f"🏆 Big mover this month: {bm.get('name', '')} (↑{bm.get('rank_change', 0)} ranks)"
+            )
+        ur = content.get("under_radar", {})
+        if ur:
+            tweets.append(
+                f"🔍 Under the radar: {ur.get('name', '')} — {ur.get('mentions', 0)} mentions across {ur.get('sources', 0)} sources"
+            )
+        if tweets:
+            self.post_thread(tweets)

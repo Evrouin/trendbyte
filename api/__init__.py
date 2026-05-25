@@ -10,9 +10,9 @@ from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
-from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
-from api.routes import categories, news, predictions, reports, stats, trends
+from api.routes import categories, content, news, predictions, reports, stats, trends
 from api.security import HMACMiddleware
 
 logger = logging.getLogger(__name__)
@@ -36,7 +36,7 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response: Response = await call_next(request)
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -47,7 +47,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > 1_048_576:
             return JSONResponse({"error": "Request body too large"}, status_code=413)
@@ -55,7 +55,7 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
 
 
 class CacheMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):  # type: ignore[override]
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         response: Response = await call_next(request)
         if request.method == "GET":
             response.headers["Cache-Control"] = "public, max-age=60"
@@ -80,6 +80,7 @@ app.include_router(categories.router, prefix="/api")
 app.include_router(reports.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 app.include_router(news.router, prefix="/api")
+app.include_router(content.router, prefix="/api")
 
 
 @app.get("/")
