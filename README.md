@@ -8,18 +8,25 @@ A tech trend intelligence system that tracks emerging technologies across develo
 
 ## Features
 
-- Multi-source data collection (GitHub, Hacker News, Dev.to, Reddit, Lobsters, Stack Overflow, Mastodon)
+- 7 collectors (GitHub, Hacker News, Reddit, Dev.to, Lobsters, Stack Overflow, Mastodon)
 - spaCy NER + whitelist-based tech name extraction
 - VADER sentiment analysis on post titles
 - Trend scoring with time decay, star normalization, and source diversity bonus
-- Rising star detection with confidence scoring
+- Rising star predictor with confidence scoring
 - ML trend predictor (gradient descent, weekly auto-training)
-- Influence scoring (cross-platform spread velocity)
+- Category classifier (TF-IDF + Logistic Regression)
+- Lifecycle detection (rising, peaking, stable, declining)
+- Correlation detection (Pearson correlation on weekly patterns)
+- Content generation (daily signal, weekly recap, monthly report) with Twitter publishing
+- Auto data cleanup pipeline (weekly)
+- HMAC request signing security
+- 10 categories (ai, web, devops, languages, databases, security, mobile, gaming, crypto, tools)
 - Database-backed dynamic categories with auto-keyword suggestion
 - Display name normalization (150+ canonical tech names)
 - FastAPI with rate-limited REST endpoints and in-memory caching
 - HTTP cache headers for CDN/browser caching
 - Scheduled daily/weekly/training pipelines via GitHub Actions
+- Dependency scanning workflow
 - SonarCloud quality gate integration
 
 ## Architecture
@@ -62,6 +69,9 @@ api/
 | `GET /api/categories/predict?text=` | ML-predicted category for text |
 | `GET /api/stats` | System stats (totals, sources, last run) |
 | `GET /api/news` | Recent posts with source and date range filters |
+| `GET /api/content/daily` | Daily signal content |
+| `GET /api/content/weekly` | Weekly recap content |
+| `GET /api/content/monthly` | Monthly report content |
 
 ## ML Features
 
@@ -127,7 +137,9 @@ python -m src.migrate            # Run migrations
 |----------|----------|-------------|
 | Daily | 2 PM UTC | Collect, analyze, score, predict |
 | Weekly | Sun 6 PM UTC | Aggregate weekly trends |
+| Cleanup | Sun 8 PM UTC | Auto data cleanup pipeline |
 | Training | Mon 12 PM UTC | Retrain ML predictor |
+| Dependency Scanning | On schedule | Check for vulnerable dependencies |
 | SonarCloud | On push | Code quality scan |
 
 ## Development
