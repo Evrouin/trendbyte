@@ -14,7 +14,7 @@ from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)
 
-SUBREDDITS = ["programming", "webdev", "machinelearning", "LocalLLaMA", "Database"]
+SUBREDDITS = ["programming", "webdev", "machinelearning", "LocalLLaMA", "Database", "devops"]
 
 
 class RedditCollector(BaseCollector):
