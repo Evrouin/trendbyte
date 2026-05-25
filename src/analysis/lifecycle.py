@@ -11,50 +11,50 @@ from src.config import Config
 
 def _linear_slope(values: list[float]) -> float:
     """Compute slope via simple linear regression."""
-    n = len(values)
-    x = np.arange(n, dtype=float)
+    x = np.arange(len(values), dtype=float)
     y = np.array(values, dtype=float)
-    slope = float(np.polyfit(x, y, 1)[0])
-    return slope
+    return float(np.polyfit(x, y, 1)[0])
 
 
 def predict_lifecycle(name: str) -> dict[str, str | float]:
-    """Predict lifecycle phase for a named trend based on score history."""
+    """Predict lifecycle phase for a named trend based on weekly score averages."""
     config = Config.from_env()
     conn = psycopg.connect(config.database_url, row_factory=dict_row)
 
     rows = conn.execute(
-        "SELECT score FROM trends WHERE LOWER(name) = LOWER(%s) ORDER BY calculated_at ASC",
+        "SELECT date_trunc('week', calculated_at) as week, AVG(score) as avg_score "
+        "FROM trends WHERE LOWER(name) = LOWER(%s) GROUP BY week ORDER BY week",
         (name,),
     ).fetchall()
     conn.close()
 
-    scores = [float(r["score"]) for r in rows]
-
+    scores = [float(r["avg_score"]) for r in rows]
     return classify_scores(name, scores)
 
 
 def classify_scores(name: str, scores: list[float]) -> dict[str, str | float]:
-    """Classify lifecycle from a list of scores (useful for testing without DB)."""
-    if len(scores) < 2:
+    """Classify lifecycle from a list of weekly average scores."""
+    if len(scores) < 3:
         return {"name": name, "phase": "stable", "momentum": 0.0}
 
-    recent = scores[-4:] if len(scores) >= 4 else scores
+    recent = scores[-4:]
     slope = _linear_slope(recent)
+    mean = np.mean(recent)
+    threshold = 0.05 * mean if mean else 0.0
 
-    # Acceleration: compare slope of last half vs first half of recent window
+    # Acceleration: slope of second half minus slope of first half
     acceleration = 0.0
     if len(recent) >= 4:
         mid = len(recent) // 2
-        slope_first = _linear_slope(recent[:mid])
-        slope_second = _linear_slope(recent[mid:])
-        acceleration = slope_second - slope_first
+        acceleration = _linear_slope(recent[mid:]) - _linear_slope(recent[:mid])
 
-    if slope > 0.1 and acceleration >= -1e-9:
+    overall_mean = np.mean(scores)
+
+    if slope > threshold:
         phase = "rising"
-    elif slope > 0 and acceleration < -1e-9 and max(recent) == recent[-1]:
+    elif recent[-1] > overall_mean and acceleration < 0:
         phase = "peaking"
-    elif slope < -0.1:
+    elif slope < -threshold:
         phase = "declining"
     else:
         phase = "stable"

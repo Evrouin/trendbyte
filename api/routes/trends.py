@@ -121,8 +121,14 @@ def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str, Any]
 
 
 @router.get("/trends/{name}")
-def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
+def get_trend_detail(
+    name: str = Path(..., max_length=200),
+    granularity: str = Query("weekly", description="daily, weekly, or monthly"),
+) -> dict[str, Any]:
     """Get a single trend with time-series history and related posts."""
+    if granularity not in ("daily", "weekly", "monthly"):
+        granularity = "weekly"
+
     conn = get_db()
 
     current = conn.execute(
@@ -132,12 +138,22 @@ def get_trend_detail(name: str = Path(..., max_length=200)) -> dict[str, Any]:
         (name,),
     ).fetchone()
 
-    history = conn.execute(
-        "SELECT mentions, score, growth_pct, calculated_at "
-        "FROM trends WHERE LOWER(name) = LOWER(%s) "
-        "ORDER BY calculated_at ASC",
-        (name,),
-    ).fetchall()
+    if granularity == "daily":
+        history = conn.execute(
+            "SELECT mentions, score, growth_pct, calculated_at "
+            "FROM trends WHERE LOWER(name) = LOWER(%s) "
+            "ORDER BY calculated_at ASC",
+            (name,),
+        ).fetchall()
+    else:
+        trunc = "week" if granularity == "weekly" else "month"
+        history = conn.execute(
+            f"SELECT date_trunc('{trunc}', calculated_at) as calculated_at, "
+            "AVG(score) as score, SUM(mentions) as mentions "
+            "FROM trends WHERE LOWER(name) = LOWER(%s) "
+            "GROUP BY 1 ORDER BY 1",
+            (name,),
+        ).fetchall()
 
     posts = conn.execute(
         "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "

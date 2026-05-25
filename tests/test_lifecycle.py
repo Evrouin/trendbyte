@@ -27,3 +27,9 @@ def test_insufficient_data() -> None:
     result = classify_scores("test", [5.0])
     assert result["phase"] == "stable"
     assert result["momentum"] == 0.0
+
+
+def test_insufficient_data_two_weeks() -> None:
+    result = classify_scores("test", [5.0, 6.0])
+    assert result["phase"] == "stable"
+    assert result["momentum"] == 0.0
