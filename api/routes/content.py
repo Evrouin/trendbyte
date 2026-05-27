@@ -3,8 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter
 
 from api.cache import cached
-from src.config import Config
-from src.content import ContentGenerator
+from src.content.generator import ContentGenerator
+from src.infra.config import Config
 
 router = APIRouter(tags=["content"])
 

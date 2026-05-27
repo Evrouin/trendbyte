@@ -174,7 +174,7 @@ async def get_trend_detail(
     except Exception:
         pass
 
-    from src.display_names import to_display_name
+    from src.categorization.display_names import to_display_name
 
     related_list = [{"name": to_display_name(r["name"]), "score": r["score"]} for r in related]
     try:

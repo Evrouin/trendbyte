@@ -34,4 +34,4 @@ jobs:
           REDDIT_CLIENT_SECRET: ${{ secrets.REDDIT_CLIENT_SECRET }}
           REDDIT_USER_AGENT: ${{ secrets.REDDIT_USER_AGENT }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: python -m src.main --no-post
+        run: python -m src.pipeline.main --no-post

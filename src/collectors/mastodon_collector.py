@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import requests
 
+from src.categorization.ner import extract_best_tech_name
 from src.collectors import BaseCollector
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Mention
-from src.ner import extract_best_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)

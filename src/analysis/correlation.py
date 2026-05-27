@@ -6,7 +6,7 @@ import numpy as np
 import psycopg
 from psycopg.rows import dict_row
 
-from src.config import Config
+from src.infra.config import Config
 
 
 def find_correlations(min_correlation: float = 0.5, min_weeks: int = 4) -> list[dict]:

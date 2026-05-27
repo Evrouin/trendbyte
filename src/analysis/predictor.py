@@ -7,9 +7,9 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 
-from src.logger import Logger
+from src.categorization.normalizer import normalize
+from src.infra.logger import Logger
 from src.models import Mention
-from src.normalizer import normalize
 
 logger = Logger.get(__name__)
 

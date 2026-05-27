@@ -6,7 +6,7 @@ import numpy as np
 import psycopg
 from psycopg.rows import dict_row
 
-from src.config import Config
+from src.infra.config import Config
 
 
 def _linear_slope(values: list[float]) -> float:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from src.logger import Logger
+from src.infra.logger import Logger
 
 logger = Logger.get(__name__)
 

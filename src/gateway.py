@@ -8,7 +8,7 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Mention, Post, Trend
 
 logger = Logger.get(__name__)
@@ -129,7 +129,7 @@ class DatabaseGateway:
 
     def save_predictions(self, rising_stars: list[Any]) -> None:
         """Store rising star predictions, skipping duplicates from same day."""
-        from src.display_names import to_display_name
+        from src.categorization.display_names import to_display_name
 
         with self._connect() as conn:
             for star in rising_stars:

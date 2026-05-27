@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import requests
 
+from src.categorization.display_names import to_display_name
+from src.categorization.stopwords import is_valid_tech_name
 from src.collectors import BaseCollector
-from src.display_names import to_display_name
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Mention
-from src.stopwords import is_valid_tech_name
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)

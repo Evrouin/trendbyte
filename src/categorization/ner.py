@@ -5,7 +5,7 @@ from __future__ import annotations
 import spacy
 from spacy.language import Language
 
-from src.stopwords import KNOWN_TECH, is_valid_tech_name
+from src.categorization.stopwords import KNOWN_TECH, is_valid_tech_name
 
 _nlp: Language | None = None
 

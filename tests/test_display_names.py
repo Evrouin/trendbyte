@@ -1,6 +1,6 @@
 """Tests for display name normalization."""
 
-from src.display_names import to_display_name
+from src.categorization.display_names import to_display_name
 
 
 def test_lowercase_to_display():

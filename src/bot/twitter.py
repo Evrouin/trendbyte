@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import tweepy
 
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Post, Trend
 from src.rendering import ImageRenderer
 

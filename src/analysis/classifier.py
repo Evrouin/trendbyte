@@ -11,7 +11,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 
-from src.config import Config
+from src.infra.config import Config
 
 MODEL_PATH = Path("models/category_model.pkl")
 

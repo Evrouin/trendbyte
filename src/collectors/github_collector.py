@@ -6,10 +6,10 @@ from datetime import datetime, timedelta
 
 from github import Github, GithubException
 
+from src.categorization.stopwords import is_valid_language
 from src.collectors import BaseCollector
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Mention
-from src.stopwords import is_valid_language
 from src.utils import RateLimitError, retry
 
 logger = Logger.get(__name__)

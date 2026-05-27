@@ -6,13 +6,13 @@ from datetime import datetime, timedelta
 
 import requests
 
-from src.config import Config
-from src.display_names import to_display_name
+from src.categorization.display_names import to_display_name
+from src.categorization.ner import extract_best_tech_name
+from src.categorization.stopwords import is_valid_tech_name
 from src.gateway import DatabaseGateway
-from src.logger import Logger
+from src.infra.config import Config
+from src.infra.logger import Logger
 from src.models import Mention
-from src.ner import extract_best_tech_name
-from src.stopwords import is_valid_tech_name
 
 Logger.setup()
 logger = Logger.get(__name__)

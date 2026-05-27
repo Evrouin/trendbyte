@@ -8,7 +8,6 @@ from datetime import datetime
 from src.analysis import TrendScorer
 from src.analysis.rising_stars import RisingStarDetector
 from src.bot import TwitterBot
-from src.circuit_breaker import CircuitBreaker
 from src.collectors import BaseCollector
 from src.collectors.devto_collector import DevtoCollector
 from src.collectors.github_collector import GitHubCollector
@@ -18,10 +17,11 @@ from src.collectors.lobsters_collector import LobstersCollector
 from src.collectors.mastodon_collector import MastodonCollector
 from src.collectors.reddit_collector import RedditCollector
 from src.collectors.stackoverflow_collector import StackOverflowCollector
-from src.config import Config
 from src.gateway import DatabaseGateway
-from src.logger import Logger
-from src.migrate import migrate
+from src.infra.circuit_breaker import CircuitBreaker
+from src.infra.config import Config
+from src.infra.logger import Logger
+from src.infra.migrate import migrate
 from src.models import Mention
 from src.rendering import ImageRenderer
 from src.report import generate_report
@@ -168,7 +168,7 @@ def run(dry_run: bool = False) -> None:
 
     # Generate and post daily content
     try:
-        from src.content import ContentGenerator
+        from src.content.generator import ContentGenerator
 
         content_gen = ContentGenerator(config.database_url)
         daily_content = content_gen.generate_daily()

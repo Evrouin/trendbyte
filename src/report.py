@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.models import Trend
 
 logger = Logger.get(__name__)

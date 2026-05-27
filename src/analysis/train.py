@@ -9,8 +9,8 @@ import psycopg
 from psycopg.rows import dict_row
 
 from src.analysis.predictor import TrendPredictor
-from src.config import Config
-from src.logger import Logger
+from src.infra.config import Config
+from src.infra.logger import Logger
 
 Logger.setup()
 logger = Logger.get(__name__)

@@ -1,12 +1,12 @@
 """Weekly summary runner entry point."""
 
 from src.bot import TwitterBot
-from src.config import Config
 from src.gateway import DatabaseGateway
-from src.logger import Logger
-from src.migrate import migrate
+from src.infra.config import Config
+from src.infra.logger import Logger
+from src.infra.migrate import migrate
+from src.pipeline.weekly import WeeklySummary
 from src.rendering import ImageRenderer
-from src.weekly import WeeklySummary
 
 Logger.setup()
 

@@ -7,7 +7,7 @@ from typing import Any
 
 from src.bot import TwitterBot
 from src.gateway import DatabaseGateway
-from src.logger import Logger
+from src.infra.logger import Logger
 from src.rendering import ImageRenderer
 
 logger = Logger.get(__name__)

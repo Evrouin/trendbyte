@@ -7,7 +7,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any, TypeVar
 
-from src.logger import Logger
+from src.infra.logger import Logger
 
 logger = Logger.get(__name__)
 

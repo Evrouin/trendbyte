@@ -4,9 +4,9 @@ import math
 from datetime import UTC, datetime
 
 from src.analysis.sentiment import average_sentiment
-from src.display_names import to_display_name
+from src.categorization.display_names import to_display_name
+from src.categorization.normalizer import normalize
 from src.models import Mention, Trend
-from src.normalizer import normalize
 
 STAR_NORMALIZERS: dict[str, float] = {
     "reddit": 0.02,

@@ -9,7 +9,7 @@ from typing import Any
 import psycopg
 from psycopg.rows import dict_row
 
-from src.display_names import to_display_name
+from src.categorization.display_names import to_display_name
 
 logger = logging.getLogger(__name__)
 
@@ -115,7 +115,7 @@ class DataCleaner:
         return count
 
     def _recategorize_other(self, conn: psycopg.Connection[Any]) -> int:
-        from src.categorizer import Categorizer
+        from src.categorization.categorizer import Categorizer
 
         categorizer = Categorizer(conn)
         names = conn.execute("SELECT DISTINCT name FROM mentions").fetchall()
@@ -153,7 +153,7 @@ class DataCleaner:
 if __name__ == "__main__":
     from dotenv import load_dotenv
 
-    from src.config import Config
+    from src.infra.config import Config
 
     load_dotenv()
     config = Config.from_env()

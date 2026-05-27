@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from src.categorization.normalizer import normalize
 from src.models import Mention
-from src.normalizer import normalize
 
 
 @dataclass(frozen=True)

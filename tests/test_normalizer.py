@@ -1,6 +1,6 @@
 """Tests for name normalization."""
 
-from src.normalizer import normalize
+from src.categorization.normalizer import normalize
 
 
 def test_lowercase() -> None:

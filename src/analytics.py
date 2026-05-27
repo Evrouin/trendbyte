@@ -7,7 +7,7 @@ from dataclasses import dataclass
 import tweepy
 
 from src.gateway import DatabaseGateway
-from src.logger import Logger
+from src.infra.logger import Logger
 
 logger = Logger.get(__name__)
 

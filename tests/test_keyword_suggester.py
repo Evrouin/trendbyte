@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 from src.analysis.keyword_suggester import KeywordSuggester
-from src.categorizer import Categorizer
+from src.categorization.categorizer import Categorizer
 from src.models import Mention
 
 
