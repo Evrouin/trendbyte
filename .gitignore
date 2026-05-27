@@ -1,9 +1,41 @@
-.env
+# Python
 __pycache__/
-*.pyc
-output/
-.venv/
-docs/
+*.py[cod]
+*$py.class
+*.so
 *.egg-info/
+*.egg
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Testing
 .pytest_cache/
-.env.prod
+.coverage
+htmlcov/
+.mypy_cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project
+output/
+docs/
