@@ -7,7 +7,6 @@ from psycopg import AsyncConnection
 
 from api.cache import cached
 from api.database import get_db
-from api.schemas import TrendDetailResponse, TrendResponse
 from src.repository import Trends
 
 router = APIRouter(tags=["trends"])
@@ -34,7 +33,7 @@ async def get_trend_names(
     return {"names": names}
 
 
-@router.get("/trends", response_model=TrendResponse)
+@router.get("/trends")
 @cached
 async def get_trends(
     category: str | None = Query(None, max_length=200, description="Filter by category"),
@@ -127,7 +126,7 @@ async def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str
     return predict_lifecycle(name)
 
 
-@router.get("/trends/{name}", response_model=TrendDetailResponse)
+@router.get("/trends/{name}")
 async def get_trend_detail(
     name: str = Path(..., max_length=200),
     granularity: str = Query("weekly", description="daily, weekly, or monthly"),

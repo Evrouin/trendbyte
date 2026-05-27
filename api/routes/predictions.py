@@ -7,7 +7,6 @@ from psycopg import AsyncConnection
 
 from api.cache import cached
 from api.database import get_db
-from api.schemas import PredictionResponse
 from src.repository import Predictions
 
 router = APIRouter(tags=["predictions"])
@@ -17,7 +16,7 @@ def get_predictions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)
     return Predictions(conn)
 
 
-@router.get("/predictions", response_model=PredictionResponse)
+@router.get("/predictions")
 @cached
 async def get_predictions(
     min_confidence: float = Query(0.4, description="Minimum confidence threshold"),

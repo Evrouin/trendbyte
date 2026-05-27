@@ -7,7 +7,6 @@ from psycopg import AsyncConnection
 
 from api.cache import cached
 from api.database import get_db
-from api.schemas import StatsResponse
 from src.repository import Mentions
 
 router = APIRouter(tags=["stats"])
@@ -17,7 +16,7 @@ def get_mentions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -
     return Mentions(conn)
 
 
-@router.get("/stats", response_model=StatsResponse)
+@router.get("/stats")
 @cached
 async def get_stats(
     conn: AsyncConnection[dict[str, Any]] = Depends(get_db),

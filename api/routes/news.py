@@ -7,7 +7,6 @@ from psycopg import AsyncConnection
 
 from api.cache import cached
 from api.database import get_db
-from api.schemas import NewsResponse
 from src.repository import Mentions
 
 router = APIRouter(tags=["news"])
@@ -17,7 +16,7 @@ def get_mentions(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Men
     return Mentions(conn)
 
 
-@router.get("/news", response_model=NewsResponse)
+@router.get("/news")
 @cached
 async def get_latest_news(
     source: str | None = Query(None, max_length=200, description="Filter by source"),
