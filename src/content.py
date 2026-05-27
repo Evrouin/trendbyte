@@ -27,7 +27,7 @@ class ContentGenerator:
         since = datetime.now(UTC) - timedelta(hours=24)
         with self._connect() as conn:
             row = conn.execute(
-                "SELECT name, score, mentions, stars, sources "
+                "SELECT name, score, mentions, sources "
                 "FROM trends WHERE calculated_at >= %s ORDER BY score DESC LIMIT 1",
                 (since,),
             ).fetchone()
@@ -44,8 +44,8 @@ class ContentGenerator:
             }
 
         name = row["name"]
-        stat_value = row.get("stars") or row["mentions"]
-        stat_label = "stars" if row.get("stars") else "mentions"
+        stat_value = row["mentions"]
+        stat_label = "mentions"
 
         try:
             lc = predict_lifecycle(name)
