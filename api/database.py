@@ -15,8 +15,11 @@ pool: AsyncConnectionPool | None = None
 async def init_pool() -> None:
     global pool
     settings = get_settings()
+    conninfo = settings.database_url
+    if "sslmode" not in conninfo:
+        conninfo += "?sslmode=require" if "?" not in conninfo else "&sslmode=require"
     pool = AsyncConnectionPool(
-        conninfo=settings.database_url,
+        conninfo=conninfo,
         min_size=2,
         max_size=10,
         kwargs={"row_factory": dict_row},
