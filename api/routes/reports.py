@@ -1,5 +1,3 @@
-"""Reports endpoints."""
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -13,8 +11,7 @@ REPORTS_DIR = Path(__file__).parent.parent.parent / "output" / "reports"
 
 
 @router.get("/reports/latest")
-def get_latest_report() -> dict[str, Any]:
-    """Get the latest pipeline run report."""
+async def get_latest_report() -> dict[str, Any]:
     if not REPORTS_DIR.exists():
         return {"error": "No reports found"}
 
@@ -23,7 +20,4 @@ def get_latest_report() -> dict[str, Any]:
         return {"error": "No reports found"}
 
     content = reports[0].read_text()
-    return {
-        "filename": reports[0].name,
-        "content": content,
-    }
+    return {"filename": reports[0].name, "content": content}

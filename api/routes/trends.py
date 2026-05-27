@@ -1,21 +1,20 @@
-"""Trends endpoints."""
-
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Path, Query
+from fastapi import APIRouter, Depends, Path, Query
+from psycopg import AsyncConnection
 
 from api.cache import cached
-from api.db import get_db
+from api.database import get_db
+from api.schemas import TrendDetailResponse, TrendResponse
 
 router = APIRouter(tags=["trends"])
 
 
 @router.get("/correlations")
 @cached
-def get_correlations() -> dict[str, Any]:
-    """Get top 20 correlated tech pairs."""
+async def get_correlations() -> dict[str, Any]:
     from src.analysis.correlation import find_correlations
 
     pairs = find_correlations()[:20]
@@ -23,23 +22,21 @@ def get_correlations() -> dict[str, Any]:
 
 
 @router.get("/trends/names")
-def get_trend_names() -> dict[str, Any]:
-    """Get all unique trend names for autocomplete."""
-    conn = get_db()
-    rows = conn.execute("SELECT DISTINCT name FROM trends ORDER BY name").fetchall()
-    conn.close()
+async def get_trend_names(
+    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
+) -> dict[str, Any]:
+    rows = await (await conn.execute("SELECT DISTINCT name FROM trends ORDER BY name")).fetchall()
     return {"names": [r["name"] for r in rows]}
 
 
-@router.get("/trends")
+@router.get("/trends", response_model=TrendResponse)
 @cached
-def get_trends(
+async def get_trends(
     category: str | None = Query(None, max_length=200, description="Filter by category"),
     days: int = Query(7, ge=1, le=365, description="Timeframe in days"),
     limit: int = Query(10, ge=1, le=100, description="Max results"),
+    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
 ) -> dict[str, Any]:
-    """Get top trends with optional category and timeframe filters."""
-    conn = get_db()
     query = (
         "SELECT name, SUM(mentions) as mentions, AVG(score) as score, "
         "AVG(growth_pct) as growth_pct, array_agg(DISTINCT unnest_sources) as sources "
@@ -59,145 +56,148 @@ def get_trends(
     query += "GROUP BY name ORDER BY score DESC LIMIT %s"
     params.append(limit)
 
-    rows = conn.execute(query, params).fetchall()
+    rows = await (await conn.execute(query, params)).fetchall()
 
     trends = []
     for r in rows:
-        cat = conn.execute(
-            "SELECT c.name FROM categories c "
-            "JOIN category_keywords ck ON c.id = ck.category_id "
-            "WHERE ck.keyword = LOWER(%s) LIMIT 1",
-            (r["name"],),
+        cat = await (
+            await conn.execute(
+                "SELECT c.name FROM categories c "
+                "JOIN category_keywords ck ON c.id = ck.category_id "
+                "WHERE ck.keyword = LOWER(%s) LIMIT 1",
+                (r["name"],),
+            )
         ).fetchone()
         trend = dict(r)
         trend["category"] = cat["name"] if cat else None
         trends.append(trend)
 
-    conn.close()
     return {"trends": trends, "count": len(trends)}
 
 
 @router.get("/trends/by-category")
 @cached
-def get_trends_by_category(
+async def get_trends_by_category(
     days: int = Query(7, ge=1, le=365, description="Timeframe in days"),
     limit: int = Query(5, ge=1, le=100, description="Max results per category"),
+    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
 ) -> dict[str, Any]:
-    """Get top trends grouped by category."""
-    conn = get_db()
-
-    cats = conn.execute("SELECT id, name FROM categories ORDER BY name").fetchall()
+    cats = await (await conn.execute("SELECT id, name FROM categories ORDER BY name")).fetchall()
     result = []
 
     for cat in cats:
-        rows = conn.execute(
-            "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score "
-            "FROM trends t "
-            "WHERE LOWER(t.name) IN ("
-            "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
-            ") AND t.calculated_at > NOW() - make_interval(days => %s) "
-            "GROUP BY t.name ORDER BY score DESC LIMIT %s",
-            (cat["id"], days, limit),
-        ).fetchall()
-
-        if not rows:
-            rows = conn.execute(
+        rows = await (
+            await conn.execute(
                 "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score "
                 "FROM trends t "
                 "WHERE LOWER(t.name) IN ("
                 "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
-                ") GROUP BY t.name ORDER BY score DESC LIMIT 1",
-                (cat["id"],),
+                ") AND t.calculated_at > NOW() - make_interval(days => %s) "
+                "GROUP BY t.name ORDER BY score DESC LIMIT %s",
+                (cat["id"], days, limit),
+            )
+        ).fetchall()
+
+        if not rows:
+            rows = await (
+                await conn.execute(
+                    "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score "
+                    "FROM trends t "
+                    "WHERE LOWER(t.name) IN ("
+                    "  SELECT ck.keyword FROM category_keywords ck WHERE ck.category_id = %s"
+                    ") GROUP BY t.name ORDER BY score DESC LIMIT 1",
+                    (cat["id"],),
+                )
             ).fetchall()
 
-        result.append(
-            {
-                "category": cat["name"],
-                "trends": [dict(r) for r in rows],
-            }
-        )
+        result.append({"category": cat["name"], "trends": [dict(r) for r in rows]})
 
-    conn.close()
     return {"categories": result}
 
 
 @router.get("/trends/{name}/lifecycle")
-def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str, Any]:
-    """Get lifecycle phase prediction for a trend."""
+async def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str, Any]:
     from src.analysis.lifecycle import predict_lifecycle
 
     return predict_lifecycle(name)
 
 
-@router.get("/trends/{name}")
-def get_trend_detail(
+@router.get("/trends/{name}", response_model=TrendDetailResponse)
+async def get_trend_detail(
     name: str = Path(..., max_length=200),
     granularity: str = Query("weekly", description="daily, weekly, or monthly"),
+    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
 ) -> dict[str, Any]:
-    """Get a single trend with time-series history and related posts."""
     if granularity not in ("daily", "weekly", "monthly"):
         granularity = "weekly"
 
-    conn = get_db()
-
-    current = conn.execute(
-        "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
-        "FROM trends WHERE LOWER(name) = LOWER(%s) "
-        "ORDER BY calculated_at DESC LIMIT 1",
-        (name,),
+    current = await (
+        await conn.execute(
+            "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
+            "FROM trends WHERE LOWER(name) = LOWER(%s) "
+            "ORDER BY calculated_at DESC LIMIT 1",
+            (name,),
+        )
     ).fetchone()
 
     if not current:
-        current = conn.execute(
-            "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
-            "FROM trends WHERE LOWER(REPLACE(REPLACE(REPLACE(REPLACE(name, '#', 'sharp'), '++', 'plusplus'), '.', '-'), ' ', '-')) = LOWER(%s) "
-            "ORDER BY calculated_at DESC LIMIT 1",
-            (name,),
+        current = await (
+            await conn.execute(
+                "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
+                "FROM trends WHERE LOWER(REPLACE(REPLACE(REPLACE(REPLACE(name, '#', 'sharp'), '++', 'plusplus'), '.', '-'), ' ', '-')) = LOWER(%s) "
+                "ORDER BY calculated_at DESC LIMIT 1",
+                (name,),
+            )
         ).fetchone()
 
     resolved_name = current["name"] if current else name
 
     if granularity == "daily":
-        history = conn.execute(
-            "SELECT date_trunc('day', calculated_at) as calculated_at, "
-            "AVG(score) as score, SUM(mentions) as mentions "
-            "FROM trends WHERE LOWER(name) = LOWER(%s) "
-            "GROUP BY 1 ORDER BY 1 ASC",
-            (resolved_name,),
+        history = await (
+            await conn.execute(
+                "SELECT date_trunc('day', calculated_at) as calculated_at, "
+                "AVG(score) as score, SUM(mentions) as mentions "
+                "FROM trends WHERE LOWER(name) = LOWER(%s) "
+                "GROUP BY 1 ORDER BY 1 ASC",
+                (resolved_name,),
+            )
         ).fetchall()
     else:
         trunc = "week" if granularity == "weekly" else "month"
-        history = conn.execute(
-            f"SELECT date_trunc('{trunc}', calculated_at) as calculated_at, "
-            "AVG(score) as score, SUM(mentions) as mentions "
-            "FROM trends WHERE LOWER(name) = LOWER(%s) "
-            "GROUP BY 1 ORDER BY 1",
-            (resolved_name,),
+        history = await (
+            await conn.execute(
+                f"SELECT date_trunc('{trunc}', calculated_at) as calculated_at, "
+                "AVG(score) as score, SUM(mentions) as mentions "
+                "FROM trends WHERE LOWER(name) = LOWER(%s) "
+                "GROUP BY 1 ORDER BY 1",
+                (resolved_name,),
+            )
         ).fetchall()
 
-    posts = conn.execute(
-        "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
-        "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "
-        "ORDER BY url, stars DESC "
-        "LIMIT 10",
-        (resolved_name,),
+    posts = await (
+        await conn.execute(
+            "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
+            "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "
+            "ORDER BY url, stars DESC "
+            "LIMIT 10",
+            (resolved_name,),
+        )
     ).fetchall()
 
-    related = conn.execute(
-        "SELECT t2.name, AVG(t2.score) as score "
-        "FROM trends t1 "
-        "JOIN trends t2 ON t2.calculated_at = t1.calculated_at AND t2.name != t1.name "
-        "WHERE LOWER(t1.name) = LOWER(%s) "
-        "GROUP BY t2.name ORDER BY score DESC LIMIT 5",
-        (resolved_name,),
+    related = await (
+        await conn.execute(
+            "SELECT t2.name, AVG(t2.score) as score "
+            "FROM trends t1 "
+            "JOIN trends t2 ON t2.calculated_at = t1.calculated_at AND t2.name != t1.name "
+            "WHERE LOWER(t1.name) = LOWER(%s) "
+            "GROUP BY t2.name ORDER BY score DESC LIMIT 5",
+            (resolved_name,),
+        )
     ).fetchall()
-
-    conn.close()
 
     if not current:
         return {"error": "Trend not found"}
 
-    # Lifecycle prediction
     lifecycle: dict[str, Any] = {}
     try:
         from src.analysis.lifecycle import predict_lifecycle
@@ -206,7 +206,6 @@ def get_trend_detail(
     except Exception:
         pass
 
-    # Merge correlated trends into related
     from src.display_names import to_display_name
 
     related_list = [{"name": to_display_name(r["name"]), "score": r["score"]} for r in related]

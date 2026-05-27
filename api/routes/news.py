@@ -1,28 +1,26 @@
-"""Latest news endpoint — recent posts from all sources."""
-
 from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Depends, Query
+from psycopg import AsyncConnection
 
 from api.cache import cached
-from api.db import get_db
+from api.database import get_db
+from api.schemas import NewsResponse
 
 router = APIRouter(tags=["news"])
 
 
-@router.get("/news")
+@router.get("/news", response_model=NewsResponse)
 @cached
-def get_latest_news(
+async def get_latest_news(
     source: str | None = Query(None, max_length=200, description="Filter by source"),
     limit: int = Query(20, ge=1, le=100, description="Max results"),
     from_date: str | None = Query(None, description="Start date (YYYY-MM-DD)"),
     to_date: str | None = Query(None, description="End date (YYYY-MM-DD)"),
+    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
 ) -> dict[str, Any]:
-    """Get latest collected posts/articles across all sources."""
-    conn = get_db()
-
     query = (
         "SELECT source, name, url, description, stars, collected_at "
         "FROM mentions WHERE url != '' AND description != '' "
@@ -44,6 +42,5 @@ def get_latest_news(
     query += "ORDER BY collected_at DESC LIMIT %s"
     params.append(limit)
 
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
+    rows = await (await conn.execute(query, params)).fetchall()
     return {"news": [dict(r) for r in rows], "count": len(rows)}

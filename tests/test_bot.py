@@ -18,9 +18,9 @@ def _make_bot() -> TwitterBot:
     renderer.render_trending_card.return_value = "/tmp/test.png"
 
     with (
-        patch("src.bot.tweepy.OAuth1UserHandler"),
-        patch("src.bot.tweepy.API"),
-        patch("src.bot.tweepy.Client"),
+        patch("src.bot.twitter.tweepy.OAuth1UserHandler"),
+        patch("src.bot.twitter.tweepy.API"),
+        patch("src.bot.twitter.tweepy.Client"),
     ):
         bot = TwitterBot(config=config, renderer=renderer)
 
