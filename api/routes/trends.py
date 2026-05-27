@@ -8,8 +8,13 @@ from psycopg import AsyncConnection
 from api.cache import cached
 from api.database import get_db
 from api.schemas import TrendDetailResponse, TrendResponse
+from src.repository import Trends
 
 router = APIRouter(tags=["trends"])
+
+
+def get_trends_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Trends:
+    return Trends(conn)
 
 
 @router.get("/correlations")
@@ -23,10 +28,10 @@ async def get_correlations() -> dict[str, Any]:
 
 @router.get("/trends/names")
 async def get_trend_names(
-    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
+    repo: Trends = Depends(get_trends_repo),
 ) -> dict[str, Any]:
-    rows = await (await conn.execute("SELECT DISTINCT name FROM trends ORDER BY name")).fetchall()
-    return {"names": [r["name"] for r in rows]}
+    names = await repo.get_names()
+    return {"names": names}
 
 
 @router.get("/trends", response_model=TrendResponse)
@@ -126,53 +131,16 @@ async def get_trend_lifecycle(name: str = Path(..., max_length=200)) -> dict[str
 async def get_trend_detail(
     name: str = Path(..., max_length=200),
     granularity: str = Query("weekly", description="daily, weekly, or monthly"),
+    repo: Trends = Depends(get_trends_repo),
     conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
 ) -> dict[str, Any]:
     if granularity not in ("daily", "weekly", "monthly"):
         granularity = "weekly"
 
-    current = await (
-        await conn.execute(
-            "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
-            "FROM trends WHERE LOWER(name) = LOWER(%s) "
-            "ORDER BY calculated_at DESC LIMIT 1",
-            (name,),
-        )
-    ).fetchone()
-
-    if not current:
-        current = await (
-            await conn.execute(
-                "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
-                "FROM trends WHERE LOWER(REPLACE(REPLACE(REPLACE(REPLACE(name, '#', 'sharp'), '++', 'plusplus'), '.', '-'), ' ', '-')) = LOWER(%s) "
-                "ORDER BY calculated_at DESC LIMIT 1",
-                (name,),
-            )
-        ).fetchone()
-
+    current = await repo.get_by_name(name)
     resolved_name = current["name"] if current else name
 
-    if granularity == "daily":
-        history = await (
-            await conn.execute(
-                "SELECT date_trunc('day', calculated_at) as calculated_at, "
-                "AVG(score) as score, SUM(mentions) as mentions "
-                "FROM trends WHERE LOWER(name) = LOWER(%s) "
-                "GROUP BY 1 ORDER BY 1 ASC",
-                (resolved_name,),
-            )
-        ).fetchall()
-    else:
-        trunc = "week" if granularity == "weekly" else "month"
-        history = await (
-            await conn.execute(
-                f"SELECT date_trunc('{trunc}', calculated_at) as calculated_at, "
-                "AVG(score) as score, SUM(mentions) as mentions "
-                "FROM trends WHERE LOWER(name) = LOWER(%s) "
-                "GROUP BY 1 ORDER BY 1",
-                (resolved_name,),
-            )
-        ).fetchall()
+    history = await repo.get_history(resolved_name, granularity)
 
     posts = await (
         await conn.execute(
@@ -228,8 +196,8 @@ async def get_trend_detail(
         pass
 
     return {
-        "trend": dict(current),
-        "history": [dict(r) for r in history],
+        "trend": current,
+        "history": history,
         "posts": [dict(r) for r in posts],
         "related": related_list,
         "lifecycle": lifecycle,

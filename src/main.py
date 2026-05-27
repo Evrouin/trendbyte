@@ -8,6 +8,7 @@ from datetime import datetime
 from src.analysis import TrendScorer
 from src.analysis.rising_stars import RisingStarDetector
 from src.bot import TwitterBot
+from src.circuit_breaker import CircuitBreaker
 from src.collectors import BaseCollector
 from src.collectors.devto_collector import DevtoCollector
 from src.collectors.github_collector import GitHubCollector
@@ -29,14 +30,17 @@ Logger.setup()
 logger = Logger.get(__name__)
 
 
-def collect_all(collectors: list[BaseCollector]) -> list[Mention]:
+def collect_all(
+    collectors: list[BaseCollector], breakers: dict[str, CircuitBreaker]
+) -> list[Mention]:
     """Run all collectors and aggregate mentions."""
     mentions: list[Mention] = []
     for collector in collectors:
-        try:
-            mentions.extend(collector.collect())
-        except Exception as e:
-            logger.error("Collector failed: %s — %s", collector.source_name, e)
+        result = breakers[collector.source_name].call(collector.collect)
+        if result:
+            mentions.extend(result)
+        else:
+            logger.error("Collector skipped (circuit open or failed): %s", collector.source_name)
     return mentions
 
 
@@ -66,7 +70,8 @@ def run(dry_run: bool = False) -> None:
 
     logger.info("Starting TrendByte pipeline (dry_run=%s)", dry_run)
 
-    mentions = collect_all(collectors)
+    breakers = {c.source_name: CircuitBreaker() for c in collectors}
+    mentions = collect_all(collectors, breakers)
     logger.info("Total mentions: %d", len(mentions))
 
     if not dry_run:

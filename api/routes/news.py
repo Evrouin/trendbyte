@@ -8,8 +8,13 @@ from psycopg import AsyncConnection
 from api.cache import cached
 from api.database import get_db
 from api.schemas import NewsResponse
+from src.repository import Mentions
 
 router = APIRouter(tags=["news"])
+
+
+def get_mentions(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Mentions:
+    return Mentions(conn)
 
 
 @router.get("/news", response_model=NewsResponse)
@@ -19,28 +24,7 @@ async def get_latest_news(
     limit: int = Query(20, ge=1, le=100, description="Max results"),
     from_date: str | None = Query(None, description="Start date (YYYY-MM-DD)"),
     to_date: str | None = Query(None, description="End date (YYYY-MM-DD)"),
-    conn: AsyncConnection[dict[str, Any]] = Depends(get_db),
+    repo: Mentions = Depends(get_mentions),
 ) -> dict[str, Any]:
-    query = (
-        "SELECT source, name, url, description, stars, collected_at "
-        "FROM mentions WHERE url != '' AND description != '' "
-    )
-    params: list[Any] = []
-
-    if source:
-        query += "AND source = %s "
-        params.append(source)
-
-    if from_date:
-        query += "AND collected_at >= %s "
-        params.append(from_date)
-
-    if to_date:
-        query += "AND collected_at <= %s::date + 1 "
-        params.append(to_date)
-
-    query += "ORDER BY collected_at DESC LIMIT %s"
-    params.append(limit)
-
-    rows = await (await conn.execute(query, params)).fetchall()
-    return {"news": [dict(r) for r in rows], "count": len(rows)}
+    rows = await repo.get_recent(source=source, limit=limit, from_date=from_date, to_date=to_date)
+    return {"news": rows, "count": len(rows)}

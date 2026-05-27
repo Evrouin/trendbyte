@@ -12,7 +12,7 @@ from slowapi.util import get_remote_address
 from api.database import close_pool, init_pool
 from api.errors import global_exception_handler
 from api.middleware import CacheMiddleware, RequestSizeLimitMiddleware, SecurityHeadersMiddleware
-from api.routes import categories, content, news, predictions, reports, stats, trends
+from api.routes import categories, content, health, news, predictions, reports, stats, trends
 from api.security import HMACMiddleware
 
 
@@ -54,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(stats.router, prefix="/api")
     app.include_router(news.router, prefix="/api")
     app.include_router(content.router, prefix="/api")
+    app.include_router(health.router)
 
     @app.get("/")
     async def root() -> dict[str, str]:
