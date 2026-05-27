@@ -12,7 +12,7 @@ from src.repository import Predictions
 router = APIRouter(tags=["predictions"])
 
 
-def get_predictions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Predictions:
+async def get_predictions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Predictions:
     return Predictions(conn)
 
 

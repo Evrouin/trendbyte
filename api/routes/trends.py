@@ -12,7 +12,7 @@ from src.repository import Trends
 router = APIRouter(tags=["trends"])
 
 
-def get_trends_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Trends:
+async def get_trends_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Trends:
     return Trends(conn)
 
 

@@ -12,7 +12,7 @@ from src.repository import Mentions
 router = APIRouter(tags=["stats"])
 
 
-def get_mentions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Mentions:
+async def get_mentions_repo(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) -> Mentions:
     return Mentions(conn)
 
 
