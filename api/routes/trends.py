@@ -147,13 +147,23 @@ def get_trend_detail(
         (name,),
     ).fetchone()
 
+    if not current:
+        current = conn.execute(
+            "SELECT name, mentions, score, growth_pct, sources, top_url, calculated_at "
+            "FROM trends WHERE LOWER(REPLACE(REPLACE(REPLACE(REPLACE(name, '#', 'sharp'), '++', 'plusplus'), '.', '-'), ' ', '-')) = LOWER(%s) "
+            "ORDER BY calculated_at DESC LIMIT 1",
+            (name,),
+        ).fetchone()
+
+    resolved_name = current["name"] if current else name
+
     if granularity == "daily":
         history = conn.execute(
             "SELECT date_trunc('day', calculated_at) as calculated_at, "
             "AVG(score) as score, SUM(mentions) as mentions "
             "FROM trends WHERE LOWER(name) = LOWER(%s) "
             "GROUP BY 1 ORDER BY 1 ASC",
-            (name,),
+            (resolved_name,),
         ).fetchall()
     else:
         trunc = "week" if granularity == "weekly" else "month"
@@ -162,7 +172,7 @@ def get_trend_detail(
             "AVG(score) as score, SUM(mentions) as mentions "
             "FROM trends WHERE LOWER(name) = LOWER(%s) "
             "GROUP BY 1 ORDER BY 1",
-            (name,),
+            (resolved_name,),
         ).fetchall()
 
     posts = conn.execute(
@@ -170,7 +180,7 @@ def get_trend_detail(
         "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "
         "ORDER BY url, stars DESC "
         "LIMIT 10",
-        (name,),
+        (resolved_name,),
     ).fetchall()
 
     related = conn.execute(
@@ -179,7 +189,7 @@ def get_trend_detail(
         "JOIN trends t2 ON t2.calculated_at = t1.calculated_at AND t2.name != t1.name "
         "WHERE LOWER(t1.name) = LOWER(%s) "
         "GROUP BY t2.name ORDER BY score DESC LIMIT 5",
-        (name,),
+        (resolved_name,),
     ).fetchall()
 
     conn.close()
