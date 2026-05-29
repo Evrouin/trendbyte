@@ -18,7 +18,10 @@ from api.security import HMACMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    await init_pool()
+    try:
+        await init_pool()
+    except Exception:
+        pass
     yield
     await close_pool()
 
