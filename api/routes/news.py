@@ -20,7 +20,7 @@ async def get_mentions(conn: AsyncConnection[dict[str, Any]] = Depends(get_db)) 
 @cached
 async def get_latest_news(
     source: str | None = Query(None, max_length=200, description="Filter by source"),
-    limit: int = Query(20, ge=1, le=100, description="Max results"),
+    limit: int = Query(20, ge=1, description="Max results"),
     from_date: str | None = Query(None, description="Start date (YYYY-MM-DD)"),
     to_date: str | None = Query(None, description="End date (YYYY-MM-DD)"),
     repo: Mentions = Depends(get_mentions),
