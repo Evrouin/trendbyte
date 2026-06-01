@@ -91,7 +91,8 @@ class ContentGenerator:
 
             faded = conn.execute(
                 "SELECT name, growth_pct FROM trends WHERE calculated_at >= %s "
-                "AND growth_pct < 0 ORDER BY growth_pct ASC LIMIT 1",
+                "AND growth_pct < 50 AND mentions <= 5 "
+                "ORDER BY growth_pct ASC LIMIT 1",
                 (since,),
             ).fetchone()
 
@@ -226,27 +227,13 @@ class ContentGenerator:
         under_radar = None
         with self._connect() as conn:
             for r in current_ranked:
-                if r["total_mentions"] < 15 and len(r.get("sources_list") or []) >= 3:
-                    mention_rows = conn.execute(
-                        "SELECT description FROM mentions WHERE LOWER(name) = LOWER(%s) AND collected_at >= %s",
-                        (r["name"], since_30),
-                    ).fetchall()
-                    objs = [
-                        Mention(
-                            source="",
-                            name=r["name"],
-                            url="",
-                            description=row.get("description", ""),
-                        )
-                        for row in mention_rows
-                    ]
-                    if average_sentiment(objs) > 0.3:
-                        under_radar = {
-                            "name": r["name"],
-                            "mentions": r["total_mentions"],
-                            "sources": len(r["sources_list"]),
-                        }
-                        break
+                if r["total_mentions"] < 30 and len(r.get("sources_list") or []) >= 2:
+                    under_radar = {
+                        "name": r["name"],
+                        "mentions": r["total_mentions"],
+                        "sources": len(r["sources_list"]),
+                    }
+                    break
 
         top_10 = [
             {"name": r["name"], "score": round(float(r["avg_score"]), 2)}
