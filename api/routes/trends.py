@@ -143,9 +143,9 @@ async def get_trend_detail(
 
     posts = await (
         await conn.execute(
-            "SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
+            "SELECT * FROM (SELECT DISTINCT ON (url) source, url, description, stars, collected_at "
             "FROM mentions WHERE LOWER(name) = LOWER(%s) AND url != '' "
-            "ORDER BY url, stars DESC "
+            "ORDER BY url, stars DESC) sub ORDER BY stars DESC "
             "LIMIT 10",
             (resolved_name,),
         )
