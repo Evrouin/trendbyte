@@ -30,15 +30,14 @@ def _get_nlp() -> Language:
 
 
 def extract_tech_names(text: str) -> list[str]:
-    """Extract technology names from text using NER + whitelist.
-
-    Returns list of recognized tech names found in the text.
-    """
+    """Extract technology names from text using NER + whitelist."""
     if not text:
         return []
 
+    cleaned = text.replace("r/", "subreddit_").replace("R/", "subreddit_")
+
     nlp = _get_nlp()
-    doc = nlp(text)
+    doc = nlp(cleaned)
 
     names: list[str] = []
     for ent in doc.ents:
@@ -47,6 +46,8 @@ def extract_tech_names(text: str) -> list[str]:
             or ent.label_ in ("ORG", "PRODUCT")
             and is_valid_tech_name(ent.text)
         ):
+            if ent.text.lower() == "subreddit":
+                continue
             names.append(ent.text)
 
     seen: set[str] = set()
