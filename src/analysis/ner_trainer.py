@@ -1,5 +1,3 @@
-"""NER training pipeline — fine-tunes spaCy on labeled mentions."""
-
 from __future__ import annotations
 
 import random
@@ -11,94 +9,105 @@ import spacy
 from psycopg.rows import dict_row
 from spacy.training import Example
 
-MODEL_DIR = Path("models/ner_model")
+from src.infra.logger import Logger
+
+logger = Logger.get(__name__)
+
+MODEL_DIR = Path(__file__).parent.parent.parent / "models" / "ner_model"
 
 
 class NERTrainer:
     def __init__(self, database_url: str) -> None:
         self._db_url = database_url
 
-    def generate_training_data(self) -> list[tuple[str, dict]]:
-        conn = psycopg.connect(self._db_url, row_factory=dict_row)
-        rows = conn.execute(
-            "SELECT DISTINCT ON (description) name, description FROM mentions "
-            "WHERE description IS NOT NULL AND description != ''"
-        ).fetchall()
-        conn.close()
+    def generate_training_data(self) -> list[tuple[str, dict[str, Any]]]:
+        with psycopg.connect(self._db_url, row_factory=dict_row) as conn:
+            rows = conn.execute(
+                "SELECT DISTINCT ON (description) name, description "
+                "FROM mentions WHERE description != '' AND LENGTH(description) > 10 "
+                "LIMIT 2000"
+            ).fetchall()
 
-        data: list[tuple[str, dict]] = []
-        seen: set[str] = set()
+        data: list[tuple[str, dict[str, Any]]] = []
         for row in rows:
             text = row["description"]
             name = row["name"]
-            if text in seen:
-                continue
             start = text.find(name)
             if start == -1:
                 start = text.lower().find(name.lower())
             if start == -1:
                 continue
             end = start + len(name)
-            seen.add(text)
             data.append((text, {"entities": [(start, end, "TECH")]}))
 
         return data
 
     def train(self, n_iter: int = 30) -> dict[str, Any]:
-        data = self.generate_training_data()
-        if len(data) < 50:
-            return {"status": "skipped", "reason": "insufficient data", "samples": len(data)}
+        training_data = self.generate_training_data()
+        if len(training_data) < 50:
+            return {
+                "status": "skipped",
+                "reason": "insufficient data",
+                "samples": len(training_data),
+            }
 
-        random.shuffle(data)
-        split = int(len(data) * 0.8)
-        train_data = data[:split]
-        test_data = data[split:]
+        random.shuffle(training_data)
+        split = int(len(training_data) * 0.8)
+        train_data = training_data[:split]
+        test_data = training_data[split:]
 
         nlp = spacy.load("en_core_web_sm")
         if "ner" not in nlp.pipe_names:
-            ner = nlp.add_pipe("ner")
-        else:
-            ner = nlp.get_pipe("ner")
+            nlp.add_pipe("ner", last=True)
+        ner = nlp.get_pipe("ner")
         ner.add_label("TECH")
 
         other_pipes = [p for p in nlp.pipe_names if p != "ner"]
-        total_loss = 0.0
         with nlp.disable_pipes(*other_pipes):
             optimizer = nlp.resume_training()
+            last_loss = 0.0
             for _ in range(n_iter):
                 random.shuffle(train_data)
                 losses: dict[str, float] = {}
                 for text, annot in train_data:
-                    doc = nlp.make_doc(text)
-                    example = Example.from_dict(doc, annot)
-                    nlp.update([example], drop=0.35, sgd=optimizer, losses=losses)
-                total_loss = losses.get("ner", 0.0)
+                    try:
+                        doc = nlp.make_doc(text)
+                        example = Example.from_dict(doc, annot)
+                        nlp.update([example], drop=0.3, sgd=optimizer, losses=losses)
+                    except Exception:
+                        continue
+                last_loss = losses.get("ner", 0.0)
 
         MODEL_DIR.mkdir(parents=True, exist_ok=True)
-        nlp.to_disk(MODEL_DIR)
+        nlp.to_disk(str(MODEL_DIR))
 
-        accuracy = self.evaluate(test_data, nlp)
+        accuracy = self.evaluate(nlp, test_data)
+
+        logger.info(
+            "NER training complete",
+            extra={
+                "samples": len(train_data),
+                "loss": round(last_loss, 4),
+                "accuracy": round(accuracy, 4),
+            },
+        )
 
         return {
             "status": "complete",
             "samples": len(train_data),
             "test_samples": len(test_data),
-            "final_loss": round(total_loss, 4),
+            "loss": round(last_loss, 4),
             "accuracy": round(accuracy, 4),
         }
 
-    def evaluate(self, test_data: list[tuple[str, dict]], nlp: Any = None) -> float:
-        if not test_data:
-            return 0.0
-        if nlp is None:
-            nlp = spacy.load(MODEL_DIR)
-
+    def evaluate(self, nlp: Any, test_data: list[tuple[str, dict[str, Any]]]) -> float:
         correct = 0
+        total = 0
         for text, annot in test_data:
             doc = nlp(text)
-            predicted = {(ent.start_char, ent.end_char) for ent in doc.ents if ent.label_ == "TECH"}
-            expected = {(s, e) for s, e, _ in annot["entities"]}
+            expected = {text[s:e] for s, e, _ in annot["entities"]}
+            predicted = {ent.text for ent in doc.ents if ent.label_ == "TECH"}
             if expected & predicted:
                 correct += 1
-
-        return correct / len(test_data)
+            total += 1
+        return correct / total if total > 0 else 0.0

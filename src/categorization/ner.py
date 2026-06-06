@@ -10,7 +10,7 @@ from spacy.language import Language
 from src.categorization.stopwords import KNOWN_TECH, is_valid_tech_name
 
 _nlp: Language | None = None
-_MODEL_PATH = Path("models/ner_model")
+_MODEL_PATH = Path(__file__).parent.parent.parent / "models" / "ner_model"
 
 
 def _get_nlp() -> Language:
