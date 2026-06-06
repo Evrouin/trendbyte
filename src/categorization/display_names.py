@@ -169,7 +169,12 @@ DISPLAY_NAMES: dict[str, str] = {
 
 def to_display_name(name: str) -> str:
     """Convert a tech name to its canonical display form."""
-    return DISPLAY_NAMES.get(name.lower().strip(), name)
+    from src.categorization.resolver import get_resolver
+
+    result = get_resolver().resolve(name)
+    if result is not None:
+        return result
+    return name
 
 
 # Additional entries

@@ -201,19 +201,20 @@ KNOWN_TECH: set[str] = {
 
 
 def is_valid_tech_name(name: str) -> bool:
-    """Check if a name is a recognized technology (strict — for title extraction)."""
+    """Check if a name is a recognized technology."""
+    from src.categorization.resolver import get_resolver
+
     cleaned = name.lower().strip()
     if len(cleaned) < 2:
         return False
-    return cleaned in KNOWN_TECH
+    return get_resolver().resolve(cleaned) is not None
 
 
 def is_valid_language(name: str) -> bool:
-    """Check if a GitHub language name is valid (looser — languages are already curated by GitHub)."""
+    """Check if a GitHub language name is valid."""
     cleaned = name.lower().strip()
     if len(cleaned) < 2:
         return False
-    # GitHub languages are already reliable, just reject obvious junk
     if cleaned.isdigit():
         return False
     return True
