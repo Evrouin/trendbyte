@@ -1,4 +1,4 @@
-"""Technology categorization — DB-backed with dynamic keyword management."""
+"""Technology categorization — DB-backed."""
 
 from __future__ import annotations
 
@@ -8,180 +8,13 @@ from src.infra.logger import Logger
 
 logger = Logger.get(__name__)
 
-DEFAULT_CATEGORIES: dict[str, set[str]] = {
-    "ai": {
-        "ai",
-        "ml",
-        "llm",
-        "gpt",
-        "gpt4",
-        "gpt5",
-        "openai",
-        "claude",
-        "gemini",
-        "langchain",
-        "ollama",
-        "llama",
-        "mistral",
-        "huggingface",
-        "pytorch",
-        "tensorflow",
-        "transformers",
-        "diffusion",
-        "stable-diffusion",
-        "midjourney",
-        "copilot",
-        "cursor",
-        "neural",
-        "deeplearning",
-        "machinelearning",
-    },
-    "web": {
-        "react",
-        "nextjs",
-        "vue",
-        "nuxtjs",
-        "svelte",
-        "angular",
-        "astro",
-        "remix",
-        "tailwind",
-        "css",
-        "html",
-        "javascript",
-        "typescript",
-        "nodejs",
-        "deno",
-        "bun",
-        "vite",
-        "webpack",
-        "htmx",
-        "hono",
-    },
-    "devops": {
-        "docker",
-        "kubernetes",
-        "k8s",
-        "terraform",
-        "ansible",
-        "jenkins",
-        "github-actions",
-        "ci",
-        "cd",
-        "aws",
-        "gcp",
-        "azure",
-        "vercel",
-        "railway",
-        "fly",
-        "nix",
-        "nixos",
-        "linux",
-        "nginx",
-        "caddy",
-        "git",
-        "github",
-        "gitlab",
-        "vim",
-        "emacs",
-        "vs-code",
-        "vscode",
-        "debian",
-        "fedora",
-        "ubuntu",
-        "windows",
-        "macos",
-    },
-    "languages": {
-        "rust",
-        "go",
-        "python",
-        "zig",
-        "elixir",
-        "kotlin",
-        "swift",
-        "java",
-        "csharp",
-        "ruby",
-        "haskell",
-        "ocaml",
-        "gleam",
-        "mojo",
-        "c",
-        "clojure",
-        "lua",
-        "r",
-        "scala",
-        "shell",
-        "powershell",
-        "assembly",
-        "sql",
-        "webassembly",
-    },
-    "mobile": {
-        "flutter",
-        "react-native",
-        "swift",
-        "kotlin",
-    },
-    "gaming": {
-        "unity",
-        "unreal",
-        "godot",
-        "blender",
-    },
-    "crypto": {
-        "bitcoin",
-        "ethereum",
-        "solana",
-        "blockchain",
-    },
-    "databases": {
-        "postgres",
-        "postgresql",
-        "mysql",
-        "sqlite",
-        "redis",
-        "mongodb",
-        "supabase",
-        "neon",
-        "turso",
-        "drizzle",
-        "prisma",
-        "duckdb",
-    },
-    "security": {
-        "security",
-        "auth",
-        "oauth",
-        "encryption",
-        "vulnerability",
-        "cve",
-        "firewall",
-        "pentest",
-        "cybersecurity",
-        "zero-trust",
-    },
-    "tools": {
-        "notion",
-        "obsidian",
-        "figma",
-        "electron",
-        "vs-code",
-        "vscode",
-    },
-}
-
 
 class Categorizer:
-    """DB-backed categorizer with dynamic keyword management."""
-
     def __init__(self, db_conn: Any = None) -> None:
         self._conn = db_conn
         self._cache: dict[str, set[str]] | None = None
 
     def categorize(self, name: str) -> list[str]:
-        """Return categories for a technology name."""
         categories = self._get_categories()
         normalized = name.lower().strip()
         matches = [cat for cat, keywords in categories.items() if normalized in keywords]
@@ -191,15 +24,15 @@ class Categorizer:
             from src.analysis.classifier import predict_proba
 
             proba = predict_proba(normalized)
-            best_cat = max(proba, key=proba.get)  # type: ignore[arg-type]
-            if best_cat != "other" and proba[best_cat] > 0.4:
-                return [best_cat]
+            if proba:
+                best = max(proba, key=proba.get)
+                if proba[best] > 0.4:
+                    return [best]
         except Exception:
             pass
         return ["other"]
 
     def add_keyword(self, category: str, keyword: str) -> None:
-        """Add a new keyword to a category."""
         if not self._conn:
             return
         self._conn.execute(
@@ -210,10 +43,8 @@ class Categorizer:
         )
         self._conn.commit()
         self._cache = None
-        logger.info("Added keyword '%s' to category '%s'", keyword, category)
 
     def add_category(self, name: str, keywords: list[str] | None = None) -> None:
-        """Create a new category, optionally with initial keywords."""
         if not self._conn:
             return
         self._conn.execute(
@@ -225,23 +56,13 @@ class Categorizer:
                 self.add_keyword(name, kw)
         self._conn.commit()
         self._cache = None
-        logger.info("Created category '%s' with %d keywords", name, len(keywords or []))
-
-    def seed_defaults(self) -> None:
-        """Populate DB with default categories and keywords."""
-        if not self._conn:
-            return
-        for category, keywords in DEFAULT_CATEGORIES.items():
-            self.add_category(category, list(keywords))
-        logger.info("Seeded default categories")
 
     def _get_categories(self) -> dict[str, set[str]]:
-        """Load categories from DB or fall back to defaults."""
         if self._cache:
             return self._cache
 
         if not self._conn:
-            self._cache = DEFAULT_CATEGORIES
+            self._cache = {}
             return self._cache
 
         rows = self._conn.execute(
@@ -249,10 +70,6 @@ class Categorizer:
             "FROM categories c "
             "LEFT JOIN category_keywords ck ON c.id = ck.category_id"
         ).fetchall()
-
-        if not rows or all(row["keyword"] is None for row in rows):
-            self._cache = DEFAULT_CATEGORIES
-            return self._cache
 
         result: dict[str, set[str]] = {}
         for row in rows:
