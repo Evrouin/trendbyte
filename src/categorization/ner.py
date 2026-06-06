@@ -48,6 +48,8 @@ def extract_tech_names(text: str) -> list[str]:
         ):
             if ent.text.lower() == "subreddit":
                 continue
+            if len(ent) == 1 and ent[0].pos_ in ("VERB", "AUX"):
+                continue
             names.append(ent.text)
 
     seen: set[str] = set()
