@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -27,7 +27,7 @@ class HNCollector(BaseCollector):
     @retry(max_attempts=3, backoff=2.0)
     def collect(self) -> list[Mention]:
         """Fetch top stories from the past week."""
-        since = int((datetime.utcnow() - timedelta(days=7)).timestamp())
+        since = int((datetime.now(UTC) - timedelta(days=7)).timestamp())
 
         response = requests.get(
             HN_SEARCH_URL,

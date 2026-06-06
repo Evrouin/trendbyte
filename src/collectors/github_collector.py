@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from github import Github, GithubException
 
@@ -28,7 +28,7 @@ class GitHubCollector(BaseCollector):
     @retry(max_attempts=3, backoff=2.0)
     def collect(self) -> list[Mention]:
         """Fetch repositories created in the last 7 days, sorted by stars."""
-        since = (datetime.utcnow() - timedelta(days=7)).strftime("%Y-%m-%d")
+        since = (datetime.now(UTC) - timedelta(days=7)).strftime("%Y-%m-%d")
         query = f"created:>{since} stars:>50"
 
         logger.info("Collecting GitHub repos", extra={"query": query})
