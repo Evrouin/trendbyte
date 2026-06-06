@@ -58,7 +58,9 @@ def extract_tech_names(text: str) -> list[str]:
         ):
             if ent.text.lower() == "subreddit":
                 continue
-            if len(ent) == 1 and ent[0].pos_ in ("VERB", "AUX"):
+            if len(ent) == 1 and ent[0].pos_ in ("VERB", "AUX", "ADV", "DET", "PRON", "ADP"):
+                continue
+            if len(ent.text) < 2:
                 continue
             names.append(ent.text)
 

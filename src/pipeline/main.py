@@ -192,24 +192,30 @@ def run(dry_run: bool = False) -> None:
 
 def _register_new_techs(mentions: list, database_url: str) -> None:
     try:
+        from collections import Counter
+
         import psycopg
 
+        counts = Counter(m.name.lower().strip() for m in mentions if len(m.name.strip()) >= 2)
+
         with psycopg.connect(database_url) as conn:
-            for m in mentions:
-                alias = m.name.lower().strip()
-                if len(alias) < 2:
+            for alias, count in counts.items():
+                if count < 3:
                     continue
                 exists = conn.execute(
                     "SELECT 1 FROM tech_aliases WHERE alias = %s", (alias,)
                 ).fetchone()
                 if exists:
                     continue
+                canonical = next(
+                    (m.name for m in mentions if m.name.lower().strip() == alias), alias
+                )
                 conn.execute(
                     "INSERT INTO tech_names (canonical_name) VALUES (%s) ON CONFLICT DO NOTHING",
-                    (m.name,),
+                    (canonical,),
                 )
                 row = conn.execute(
-                    "SELECT id FROM tech_names WHERE canonical_name = %s", (m.name,)
+                    "SELECT id FROM tech_names WHERE canonical_name = %s", (canonical,)
                 ).fetchone()
                 if row:
                     conn.execute(
