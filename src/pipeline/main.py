@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 
 from src.analysis import TrendScorer
 from src.analysis.rising_stars import RisingStarDetector
@@ -44,6 +44,37 @@ def collect_all(
     return mentions
 
 
+def _score_and_save(
+    mentions: list[Mention], scorer: TrendScorer, db: DatabaseGateway, dry_run: bool
+) -> list:
+    trends = scorer.score(mentions)
+    if not dry_run:
+        recent = db.get_recent_posts(days=3)
+        trends = [t for t in trends if t.name not in recent]
+    return trends
+
+
+def _dry_run_output(trends: list, renderer: ImageRenderer) -> None:
+    logger.info("--- DRY RUN RESULTS ---")
+    for i, t in enumerate(trends[:3], 1):
+        logger.info(
+            "#%d %s | score=%.1f | growth=%.1f%% | sources=%s",
+            i,
+            t.name,
+            t.score,
+            t.growth_pct,
+            t.sources,
+        )
+    image = renderer.render_trending_card(
+        trends=[
+            {"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct}
+            for t in trends[:3]
+        ],
+        date=datetime.now(UTC).strftime("%B %d, %Y"),
+    )
+    logger.info("Image generated: %s", image)
+
+
 def run(dry_run: bool = False) -> None:
     """Execute the daily TrendByte pipeline."""
     config = Config.from_env()
@@ -78,10 +109,7 @@ def run(dry_run: bool = False) -> None:
         db.save_mentions(mentions)
         _register_new_techs(mentions, config.database_url)
 
-    trends = scorer.score(mentions)
-    if not dry_run:
-        recent = db.get_recent_posts(days=3)
-        trends = [t for t in trends if t.name not in recent]
+    trends = _score_and_save(mentions, scorer, db if not dry_run else None, dry_run)
 
     if not trends:
         logger.warning("No new trends to post")
@@ -90,36 +118,18 @@ def run(dry_run: bool = False) -> None:
     logger.info("Top trend: %s (score: %.1f)", trends[0].name, trends[0].score)
 
     if dry_run:
-        logger.info("--- DRY RUN RESULTS ---")
-        for i, t in enumerate(trends[:3], 1):
-            logger.info(
-                "#%d %s | score=%.1f | growth=%.1f%% | sources=%s",
-                i,
-                t.name,
-                t.score,
-                t.growth_pct,
-                t.sources,
-            )
-        image = renderer.render_trending_card(
-            trends=[
-                {"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct}
-                for t in trends[:3]
-            ],
-            date=datetime.utcnow().strftime("%B %d, %Y"),
-        )
-        logger.info("Image generated: %s", image)
+        _dry_run_output(trends, renderer)
         return
 
     db.save_trends(trends[:10])
 
-    # Compute lifecycle for top 10 trends
     from src.analysis.lifecycle import predict_lifecycle
 
     for t in trends[:10]:
         lc = predict_lifecycle(t.name)
         logger.info("Lifecycle %s: phase=%s momentum=%.4f", lc["name"], lc["phase"], lc["momentum"])
 
-    today = datetime.utcnow().strftime("%B %d, %Y")
+    today = datetime.now(UTC).strftime("%B %d, %Y")
     image = renderer.render_trending_card(
         trends=[
             {"name": t.name, "stars": str(t.mentions), "forks": "—", "growth": t.growth_pct}
@@ -167,7 +177,6 @@ def run(dry_run: bool = False) -> None:
     else:
         logger.warning("Pipeline complete — no tweet posted")
 
-    # Generate and post daily content
     try:
         from src.content.generator import ContentGenerator
 

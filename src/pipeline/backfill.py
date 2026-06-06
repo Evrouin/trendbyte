@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import requests
 
@@ -18,7 +18,7 @@ Logger.setup()
 logger = Logger.get(__name__)
 
 START_DATE = datetime(2025, 1, 1)
-END_DATE = datetime.utcnow()
+END_DATE = datetime.now(UTC)
 
 
 def backfill_hn(db: DatabaseGateway) -> int:
@@ -77,6 +77,47 @@ def backfill_hn(db: DatabaseGateway) -> int:
     return count
 
 
+def _extract_tech_from_tags(tags: list[str]) -> str:
+    for tag in tags:
+        if is_valid_tech_name(tag):
+            return tag
+    return ""
+
+
+def _devto_to_mention(article: dict, collected_at: datetime) -> Mention | None:
+    name = _extract_tech_from_tags(article.get("tag_list", []))
+    if not name:
+        name = extract_best_tech_name(article.get("title", ""))
+    if not name:
+        return None
+    return Mention(
+        source="devto",
+        name=to_display_name(name),
+        url=article.get("url", ""),
+        description=article.get("title", ""),
+        stars=article.get("positive_reactions_count", 0),
+        score=float(article.get("positive_reactions_count", 0)),
+        collected_at=collected_at,
+    )
+
+
+def _lobsters_to_mention(story: dict, collected_at: datetime) -> Mention | None:
+    name = _extract_tech_from_tags(story.get("tags", []))
+    if not name:
+        name = extract_best_tech_name(story.get("title", ""))
+    if not name:
+        return None
+    return Mention(
+        source="lobsters",
+        name=to_display_name(name),
+        url=story.get("url") or story.get("short_id_url", ""),
+        description=story.get("title", ""),
+        stars=story.get("score", 0),
+        score=float(story.get("score", 0)),
+        collected_at=collected_at,
+    )
+
+
 def backfill_devto(db: DatabaseGateway) -> int:
     """Backfill Dev.to top articles by month."""
     count = 0
@@ -90,33 +131,12 @@ def backfill_devto(db: DatabaseGateway) -> int:
             if resp.status_code != 200:
                 continue
 
-            articles = resp.json()
-            mentions = []
             collected_at = END_DATE - timedelta(days=days_ago)
-
-            for article in articles:
-                tags = article.get("tag_list", [])
-                name = ""
-                for tag in tags:
-                    if is_valid_tech_name(tag):
-                        name = tag
-                        break
-                if not name:
-                    name = extract_best_tech_name(article.get("title", ""))
-                if not name:
-                    continue
-
-                mentions.append(
-                    Mention(
-                        source="devto",
-                        name=to_display_name(name),
-                        url=article.get("url", ""),
-                        description=article.get("title", ""),
-                        stars=article.get("positive_reactions_count", 0),
-                        score=float(article.get("positive_reactions_count", 0)),
-                        collected_at=collected_at,
-                    )
-                )
+            mentions = [
+                m
+                for article in resp.json()
+                if (m := _devto_to_mention(article, collected_at)) is not None
+            ]
 
             if mentions:
                 db.save_mentions(mentions)
@@ -131,47 +151,26 @@ def backfill_devto(db: DatabaseGateway) -> int:
 
 def backfill_lobsters(db: DatabaseGateway) -> int:
     """Backfill Lobsters hottest stories (limited to current page)."""
-    count = 0
     try:
         resp = requests.get("https://lobste.rs/hottest.json", timeout=15)
         if resp.status_code != 200:
             return 0
 
-        stories = resp.json()[:50]
-        mentions = []
-        for story in stories:
-            tags = story.get("tags", [])
-            name = ""
-            for tag in tags:
-                if is_valid_tech_name(tag):
-                    name = tag
-                    break
-            if not name:
-                name = extract_best_tech_name(story.get("title", ""))
-            if not name:
-                continue
-
-            mentions.append(
-                Mention(
-                    source="lobsters",
-                    name=to_display_name(name),
-                    url=story.get("url") or story.get("short_id_url", ""),
-                    description=story.get("title", ""),
-                    stars=story.get("score", 0),
-                    score=float(story.get("score", 0)),
-                    collected_at=END_DATE,
-                )
-            )
+        mentions = [
+            m
+            for story in resp.json()[:50]
+            if (m := _lobsters_to_mention(story, END_DATE)) is not None
+        ]
 
         if mentions:
             db.save_mentions(mentions)
-            count = len(mentions)
-            logger.info("Lobsters: %d mentions", count)
+            logger.info("Lobsters: %d mentions", len(mentions))
+            return len(mentions)
 
     except Exception as e:
         logger.error("Lobsters backfill error: %s", e)
 
-    return count
+    return 0
 
 
 def run() -> None:

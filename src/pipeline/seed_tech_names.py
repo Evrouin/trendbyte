@@ -40,66 +40,71 @@ def _add_alias(conn: psycopg.Connection, tech_id: int, alias: str, source: str) 
     )
 
 
+def _seed_display_names(conn: psycopg.Connection) -> None:
+    for key, display in DISPLAY_NAMES.items():
+        tech_id = _upsert_tech(conn, display)
+        _add_alias(conn, tech_id, key, "display_names")
+        if display.lower() != key:
+            _add_alias(conn, tech_id, display.lower(), "display_names")
+
+
+def _seed_known_tech(conn: psycopg.Connection) -> None:
+    existing = {row[0] for row in conn.execute("SELECT canonical_name FROM tech_names").fetchall()}
+    for tech in KNOWN_TECH:
+        if tech not in {e.lower() for e in existing}:
+            tech_id = _upsert_tech(conn, tech)
+            _add_alias(conn, tech_id, tech, "known_tech")
+
+
+def _seed_stackshare(conn: psycopg.Connection) -> None:
+    print("Downloading StackShare dataset...")
+    resp = requests.get(STACKSHARE_URL, timeout=60)
+    resp.raise_for_status()
+    reader = csv.DictReader(io.StringIO(resp.text))
+
+    tools = []
+    for row in reader:
+        cat = row.get("category_slug", "")
+        if cat in RELEVANT_CATEGORIES:
+            try:
+                popularity = int(row.get("stacks_count", "0") or "0")
+            except ValueError:
+                popularity = 0
+            tools.append((row.get("name", ""), popularity))
+
+    tools.sort(key=lambda x: x[1], reverse=True)
+    tools = tools[:3000]
+
+    existing_canonical = {
+        row[0].lower() for row in conn.execute("SELECT canonical_name FROM tech_names").fetchall()
+    }
+
+    added = 0
+    for name, _ in tools:
+        if not name:
+            continue
+        if name.lower() in existing_canonical:
+            row = conn.execute(
+                "SELECT id FROM tech_names WHERE LOWER(canonical_name) = %s",
+                (name.lower(),),
+            ).fetchone()
+            if row:
+                _add_alias(conn, row[0], name.lower(), "stackshare")
+        else:
+            tech_id = _upsert_tech(conn, name)
+            _add_alias(conn, tech_id, name.lower(), "stackshare")
+            existing_canonical.add(name.lower())
+            added += 1
+
+    print(f"StackShare: added {added} new techs, processed {len(tools)} tools total")
+
+
 def seed(database_url: str) -> None:
     with psycopg.connect(database_url) as conn:
-        for key, display in DISPLAY_NAMES.items():
-            tech_id = _upsert_tech(conn, display)
-            _add_alias(conn, tech_id, key, "display_names")
-            if display.lower() != key:
-                _add_alias(conn, tech_id, display.lower(), "display_names")
-
-        existing = {
-            row[0] for row in conn.execute("SELECT canonical_name FROM tech_names").fetchall()
-        }
-
-        for tech in KNOWN_TECH:
-            if tech not in {e.lower() for e in existing}:
-                tech_id = _upsert_tech(conn, tech)
-                _add_alias(conn, tech_id, tech, "known_tech")
-
+        _seed_display_names(conn)
+        _seed_known_tech(conn)
         print(f"Seeded {len(DISPLAY_NAMES)} display_names + {len(KNOWN_TECH)} known_tech entries")
-
-        print("Downloading StackShare dataset...")
-        resp = requests.get(STACKSHARE_URL, timeout=60)
-        resp.raise_for_status()
-        reader = csv.DictReader(io.StringIO(resp.text))
-
-        tools = []
-        for row in reader:
-            cat = row.get("category_slug", "")
-            if cat in RELEVANT_CATEGORIES:
-                try:
-                    popularity = int(row.get("stacks_count", "0") or "0")
-                except ValueError:
-                    popularity = 0
-                tools.append((row.get("name", ""), popularity))
-
-        tools.sort(key=lambda x: x[1], reverse=True)
-        tools = tools[:3000]
-
-        existing_canonical = {
-            row[0].lower()
-            for row in conn.execute("SELECT canonical_name FROM tech_names").fetchall()
-        }
-
-        added = 0
-        for name, _ in tools:
-            if not name:
-                continue
-            if name.lower() in existing_canonical:
-                row = conn.execute(
-                    "SELECT id FROM tech_names WHERE LOWER(canonical_name) = %s",
-                    (name.lower(),),
-                ).fetchone()
-                if row:
-                    _add_alias(conn, row[0], name.lower(), "stackshare")
-            else:
-                tech_id = _upsert_tech(conn, name)
-                _add_alias(conn, tech_id, name.lower(), "stackshare")
-                existing_canonical.add(name.lower())
-                added += 1
-
-        print(f"StackShare: added {added} new techs, processed {len(tools)} tools total")
+        _seed_stackshare(conn)
 
 
 if __name__ == "__main__":

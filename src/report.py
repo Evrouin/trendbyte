@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from src.infra.logger import Logger
@@ -17,7 +17,7 @@ def generate_report(trends: list[Trend], mentions_count: int, image_path: str | 
     """Generate and save a markdown report. Returns the file path."""
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-    now = datetime.utcnow()
+    now = datetime.now(UTC)
     filename = f"report_{now.strftime('%Y-%m-%d_%H%M')}.md"
     filepath = REPORTS_DIR / filename
 

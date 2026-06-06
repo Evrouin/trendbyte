@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from src.bot import TwitterBot
@@ -38,7 +38,7 @@ class WeeklySummary:
             for t in trends
         ]
 
-        week = datetime.utcnow().strftime("%B %d, %Y")
+        week = datetime.now(UTC).strftime("%B %d, %Y")
         image_path = self._renderer.render_weekly_comparison(chart_data, week)
 
         tweets = self._build_thread(trends, week)

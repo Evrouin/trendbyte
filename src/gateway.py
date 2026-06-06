@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 import psycopg
@@ -68,7 +68,7 @@ class DatabaseGateway:
         with self._connect() as conn:
             result = conn.execute(
                 "SELECT 1 FROM posts WHERE trend_name = %s AND posted_at::date = %s",
-                (trend_name, datetime.utcnow().date()),
+                (trend_name, datetime.now(UTC).date()),
             ).fetchone()
         return result is not None
 

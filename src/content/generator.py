@@ -155,6 +155,54 @@ class ContentGenerator:
             "generated_at": datetime.now(UTC).isoformat(),
         }
 
+    def _get_big_mover(self, current_ranked: list[dict], prev_map: dict[str, Any]) -> dict | None:
+        prev_ranked_names = sorted(prev_map.keys(), key=lambda n: prev_map[n], reverse=True)
+        prev_rank_map = {n: i for i, n in enumerate(prev_ranked_names)}
+
+        big_mover = None
+        best_improvement = 0
+        for i, r in enumerate(current_ranked):
+            if r["name"] in prev_rank_map:
+                improvement = prev_rank_map[r["name"]] - i
+                if improvement > best_improvement:
+                    best_improvement = improvement
+                    big_mover = {"name": r["name"], "rank_change": improvement}
+        return big_mover
+
+    def _get_sustained_hype(
+        self, current_ranked: list[dict], weeks_map: dict[str, int], prev_map: dict[str, Any]
+    ) -> tuple[list[dict], list[dict]]:
+        sustained_hype = []
+        flash_in_pan = []
+        for r in current_ranked:
+            if weeks_map.get(r["name"], 0) >= 3:
+                try:
+                    lc = predict_lifecycle(r["name"])
+                    if lc["phase"] in ("rising", "stable"):
+                        sustained_hype.append(
+                            {"name": r["name"], "weeks": weeks_map[r["name"]], "phase": lc["phase"]}
+                        )
+                except Exception:
+                    pass
+            if r["name"] not in prev_map:
+                try:
+                    lc = predict_lifecycle(r["name"])
+                    if lc["phase"] == "declining":
+                        flash_in_pan.append({"name": r["name"]})
+                except Exception:
+                    pass
+        return sustained_hype, flash_in_pan
+
+    def _get_under_radar(self, current_ranked: list[dict]) -> dict | None:
+        for r in current_ranked:
+            if r["total_mentions"] < 30 and len(r.get("sources_list") or []) >= 2:
+                return {
+                    "name": r["name"],
+                    "mentions": r["total_mentions"],
+                    "sources": len(r["sources_list"]),
+                }
+        return None
+
     def generate_monthly(self) -> dict:
         """Big mover, sustained hype, flash in pan, under radar, top 10."""
         now = datetime.now(UTC)
@@ -184,56 +232,11 @@ class ContentGenerator:
 
         prev_map = {r["name"]: r["avg_score"] for r in previous}
         weeks_map = {r["name"]: r["weeks"] for r in weekly_presence}
-
-        # Rank improvement (big mover)
         current_ranked = sorted(current, key=lambda r: r["avg_score"], reverse=True)
-        prev_ranked_names = sorted(prev_map.keys(), key=lambda n: prev_map[n], reverse=True)
-        prev_rank_map = {n: i for i, n in enumerate(prev_ranked_names)}
 
-        big_mover = None
-        best_improvement = 0
-        for i, r in enumerate(current_ranked):
-            if r["name"] in prev_rank_map:
-                improvement = prev_rank_map[r["name"]] - i
-                if improvement > best_improvement:
-                    best_improvement = improvement
-                    big_mover = {"name": r["name"], "rank_change": improvement}
-
-        # Sustained hype: rising/stable + 3+ weeks
-        sustained_hype = []
-        for r in current_ranked:
-            if weeks_map.get(r["name"], 0) >= 3:
-                try:
-                    lc = predict_lifecycle(r["name"])
-                    if lc["phase"] in ("rising", "stable"):
-                        sustained_hype.append(
-                            {"name": r["name"], "weeks": weeks_map[r["name"]], "phase": lc["phase"]}
-                        )
-                except Exception:
-                    pass
-
-        # Flash in pan: appeared then declining
-        flash_in_pan = []
-        for r in current_ranked:
-            if r["name"] not in prev_map:
-                try:
-                    lc = predict_lifecycle(r["name"])
-                    if lc["phase"] == "declining":
-                        flash_in_pan.append({"name": r["name"]})
-                except Exception:
-                    pass
-
-        # Under radar: mentions < 15, sources >= 3, sentiment > 0.3
-        under_radar = None
-        with self._connect() as conn:
-            for r in current_ranked:
-                if r["total_mentions"] < 30 and len(r.get("sources_list") or []) >= 2:
-                    under_radar = {
-                        "name": r["name"],
-                        "mentions": r["total_mentions"],
-                        "sources": len(r["sources_list"]),
-                    }
-                    break
+        big_mover = self._get_big_mover(current_ranked, prev_map)
+        sustained_hype, flash_in_pan = self._get_sustained_hype(current_ranked, weeks_map, prev_map)
+        under_radar = self._get_under_radar(current_ranked)
 
         top_10 = [
             {"name": r["name"], "score": round(float(r["avg_score"]), 2)}
