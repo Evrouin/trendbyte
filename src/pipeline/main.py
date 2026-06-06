@@ -76,6 +76,7 @@ def run(dry_run: bool = False) -> None:
 
     if not dry_run:
         db.save_mentions(mentions)
+        _register_new_techs(mentions, config.database_url)
 
     trends = scorer.score(mentions)
     if not dry_run:
@@ -178,6 +179,37 @@ def run(dry_run: bool = False) -> None:
             bot.post_daily(daily_content)
     except Exception as e:
         logger.error("Content generation/posting failed: %s", e)
+
+
+def _register_new_techs(mentions: list, database_url: str) -> None:
+    try:
+        import psycopg
+
+        with psycopg.connect(database_url) as conn:
+            for m in mentions:
+                alias = m.name.lower().strip()
+                if len(alias) < 2:
+                    continue
+                exists = conn.execute(
+                    "SELECT 1 FROM tech_aliases WHERE alias = %s", (alias,)
+                ).fetchone()
+                if exists:
+                    continue
+                conn.execute(
+                    "INSERT INTO tech_names (canonical_name) VALUES (%s) ON CONFLICT DO NOTHING",
+                    (m.name,),
+                )
+                row = conn.execute(
+                    "SELECT id FROM tech_names WHERE canonical_name = %s", (m.name,)
+                ).fetchone()
+                if row:
+                    conn.execute(
+                        "INSERT INTO tech_aliases (tech_id, alias, source) VALUES (%s, %s, 'discovered') ON CONFLICT DO NOTHING",
+                        (row[0], alias),
+                    )
+            conn.commit()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

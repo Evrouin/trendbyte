@@ -21,7 +21,6 @@ class DataCleaner:
         self._db_url = database_url
 
     def run(self) -> dict[str, int]:
-        """Execute all cleanup tasks and return a summary dict."""
         conn = psycopg.connect(self._db_url, row_factory=dict_row)
         summary: dict[str, int] = {}
 
@@ -32,6 +31,7 @@ class DataCleaner:
         summary["predictions_stale_removed"] = self._remove_stale_predictions(conn)
         summary["trends_sources_cleaned"] = self._clean_trends_sources(conn)
         summary["keywords_added"] = self._recategorize_other(conn)
+        summary["techs_categorized"] = self._categorize_new_techs(conn)
 
         conn.close()
         logger.info("Cleanup complete: %s", summary)
@@ -147,6 +147,37 @@ class DataCleaner:
                 count += 1
 
         logger.info("Re-categorized %d techs from 'other'", count)
+        return count
+
+    def _categorize_new_techs(self, conn: psycopg.Connection[Any]) -> int:
+        try:
+            from src.analysis.classifier import predict_proba
+        except Exception:
+            return 0
+
+        rows = conn.execute(
+            "SELECT id, canonical_name FROM tech_names WHERE category_id IS NULL"
+        ).fetchall()
+        count = 0
+        for row in rows:
+            proba = predict_proba(row["canonical_name"])
+            if not proba:
+                continue
+            best = max(proba, key=proba.get)
+            if proba[best] < 0.4:
+                continue
+            cat = conn.execute("SELECT id FROM categories WHERE name = %s", (best,)).fetchone()
+            if cat:
+                conn.execute(
+                    "UPDATE tech_names SET category_id = %s WHERE id = %s",
+                    (cat["id"], row["id"]),
+                )
+                conn.execute(
+                    "INSERT INTO category_keywords (category_id, keyword) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    (cat["id"], row["canonical_name"].lower()),
+                )
+                count += 1
+        conn.commit()
         return count
 
 
