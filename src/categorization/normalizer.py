@@ -2,29 +2,18 @@
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 
-ALIASES: dict[str, str] = {
-    "golang": "go",
-    "js": "javascript",
-    "ts": "typescript",
-    "node": "nodejs",
-    "react.js": "react",
-    "reactjs": "react",
-    "vue.js": "vue",
-    "vuejs": "vue",
-    "next.js": "nextjs",
-    "nuxt.js": "nuxtjs",
-    "deno2": "deno",
-    "gpt-4": "gpt4",
-    "gpt-5": "gpt5",
-    "llama3": "llama",
-    "llama-3": "llama",
-}
+_DATA_PATH = Path(__file__).parent.parent.parent / "data" / "aliases.json"
+ALIASES: dict[str, str] = json.loads(_DATA_PATH.read_text()) if _DATA_PATH.exists() else {}
 
 
 def normalize(name: str) -> str:
-    """Normalize a technology name for consistent grouping."""
     cleaned = re.sub(r"[^\w\s\-.]", "", name.strip().lower())
     cleaned = re.sub(r"\s+", "-", cleaned)
-    return ALIASES.get(cleaned, cleaned)
+    from src.categorization.resolver import get_resolver
+
+    result = get_resolver().resolve(cleaned)
+    return result.lower() if result else cleaned

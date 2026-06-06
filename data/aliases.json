@@ -1,0 +1,17 @@
+{
+  "golang": "go",
+  "js": "javascript",
+  "ts": "typescript",
+  "node": "nodejs",
+  "react.js": "react",
+  "reactjs": "react",
+  "vue.js": "vue",
+  "vuejs": "vue",
+  "next.js": "nextjs",
+  "nuxt.js": "nuxtjs",
+  "deno2": "deno",
+  "gpt-4": "gpt4",
+  "gpt-5": "gpt5",
+  "llama3": "llama",
+  "llama-3": "llama"
+}

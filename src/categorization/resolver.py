@@ -27,14 +27,25 @@ class TechResolver:
         self._seed_from_static()
 
     def _seed_from_static(self) -> None:
-        from src.categorization.display_names import DISPLAY_NAMES
-        from src.categorization.stopwords import KNOWN_TECH
+        import json
+        from pathlib import Path
 
-        for alias, canonical in DISPLAY_NAMES.items():
-            self._cache[alias.lower()] = canonical
-        for tech in KNOWN_TECH:
-            if tech.lower() not in self._cache:
-                self._cache[tech.lower()] = tech
+        data_dir = Path(__file__).parent.parent.parent / "data"
+        dn_path = data_dir / "display_names.json"
+        kt_path = data_dir / "known_tech.json"
+        al_path = data_dir / "aliases.json"
+
+        if dn_path.exists():
+            for alias, canonical in json.loads(dn_path.read_text()).items():
+                self._cache[alias.lower()] = canonical
+        if kt_path.exists():
+            for tech in json.loads(kt_path.read_text()):
+                if tech.lower() not in self._cache:
+                    self._cache[tech.lower()] = tech
+        if al_path.exists():
+            for alias, target in json.loads(al_path.read_text()).items():
+                if alias.lower() not in self._cache:
+                    self._cache[alias.lower()] = self._cache.get(target, target)
 
     def resolve(self, name: str) -> str | None:
         return self._cache.get(name.lower().strip())

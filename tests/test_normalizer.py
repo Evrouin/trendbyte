@@ -15,7 +15,7 @@ def test_aliases_resolved() -> None:
     assert normalize("Golang") == "go"
     assert normalize("JS") == "javascript"
     assert normalize("Vue.js") == "vue"
-    assert normalize("Node") == "nodejs"
+    assert normalize("Node") == "node.js"
 
 
 def test_spaces_to_dashes() -> None:
