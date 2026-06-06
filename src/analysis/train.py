@@ -217,6 +217,15 @@ def train() -> None:
     except Exception as e:
         logger.warning("Category classifier training failed: %s", e)
 
+    try:
+        from src.analysis.ner_trainer import NERTrainer
+
+        ner_trainer = NERTrainer(config.database_url)
+        ner_result = ner_trainer.train()
+        logger.info("NER training result: %s", json.dumps(ner_result))
+    except Exception as e:
+        logger.warning("NER training failed: %s", e)
+
 
 if __name__ == "__main__":
     train()

@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import spacy
 from spacy.language import Language
 
 from src.categorization.stopwords import KNOWN_TECH, is_valid_tech_name
 
 _nlp: Language | None = None
+_MODEL_PATH = Path("models/ner_model")
 
 
 def _get_nlp() -> Language:
-    """Load spaCy model with custom tech entity ruler."""
+    """Load trained NER model if available, otherwise fall back to entity ruler."""
     global _nlp
     if _nlp is not None:
+        return _nlp
+
+    if _MODEL_PATH.exists():
+        _nlp = spacy.load(_MODEL_PATH)
         return _nlp
 
     _nlp = spacy.load("en_core_web_sm")
