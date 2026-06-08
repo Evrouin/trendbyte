@@ -17,22 +17,24 @@ class Mentions:
         to_date: str | None = None,
     ) -> list[dict[str, Any]]:
         query = (
-            "SELECT source, name, url, description, stars, collected_at "
-            "FROM mentions WHERE url != '' AND description != '' "
+            "SELECT m.source, m.name, m.url, m.description, m.stars, m.collected_at "
+            "FROM mentions m "
+            "JOIN tech_aliases ta ON ta.alias = LOWER(m.name) "
+            "WHERE m.url != '' AND m.description != '' "
         )
         params: list[Any] = []
 
         if source:
-            query += "AND source = %s "
+            query += "AND m.source = %s "
             params.append(source)
         if from_date:
-            query += "AND collected_at >= %s "
+            query += "AND m.collected_at >= %s "
             params.append(from_date)
         if to_date:
-            query += "AND collected_at <= %s::date + 1 "
+            query += "AND m.collected_at <= %s::date + 1 "
             params.append(to_date)
 
-        query += "ORDER BY collected_at DESC LIMIT %s"
+        query += "ORDER BY m.collected_at DESC LIMIT %s"
         params.append(limit)
 
         rows = await (await self._conn.execute(query, params)).fetchall()
