@@ -9,6 +9,7 @@ class TechResolver:
     def __init__(self, database_url: str | None = None) -> None:
         self._database_url = database_url
         self._cache: dict[str, str] = {}
+        self._ambiguous: set[str] = set()
         self._load_cache()
 
     def _load_cache(self) -> None:
@@ -19,9 +20,15 @@ class TechResolver:
                         "SELECT ta.alias, tn.canonical_name "
                         "FROM tech_aliases ta JOIN tech_names tn ON ta.tech_id = tn.id"
                     ).fetchall()
-                self._cache = {row[0].lower(): row[1] for row in rows}
-                if self._cache:
-                    return
+                    self._cache = {row[0].lower(): row[1] for row in rows}
+                    amb_rows = conn.execute(
+                        "SELECT ta.alias FROM tech_aliases ta "
+                        "JOIN tech_names tn ON ta.tech_id = tn.id "
+                        "WHERE tn.ambiguous = TRUE"
+                    ).fetchall()
+                    self._ambiguous = {row[0].lower() for row in amb_rows}
+                    if self._cache:
+                        return
             except Exception:
                 pass
         self._seed_from_static()
@@ -49,6 +56,9 @@ class TechResolver:
 
     def resolve(self, name: str) -> str | None:
         return self._cache.get(name.lower().strip())
+
+    def is_ambiguous(self, name: str) -> bool:
+        return name.lower().strip() in self._ambiguous
 
     def get_all_aliases(self) -> set[str]:
         return set(self._cache.keys())

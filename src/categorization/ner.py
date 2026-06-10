@@ -38,6 +38,17 @@ def _get_nlp() -> Language:
     return _nlp
 
 
+def _has_tech_context(doc, ent) -> bool:
+    resolver = get_resolver()
+    window = doc[max(0, ent.start - 10) : min(len(doc), ent.end + 10)]
+    for token in window:
+        if token.i >= ent.start and token.i < ent.end:
+            continue
+        if resolver.resolve(token.text) is not None and token.text.lower() != ent.text.lower():
+            return True
+    return False
+
+
 def extract_tech_names(text: str) -> list[str]:
     """Extract technology names from text using NER + whitelist."""
     if not text:
@@ -61,6 +72,8 @@ def extract_tech_names(text: str) -> list[str]:
             if len(ent) == 1 and ent[0].pos_ in ("VERB", "AUX", "ADV", "DET", "PRON", "ADP"):
                 continue
             if len(ent.text) < 2:
+                continue
+            if resolver.is_ambiguous(ent.text) and not _has_tech_context(doc, ent):
                 continue
             names.append(ent.text)
 

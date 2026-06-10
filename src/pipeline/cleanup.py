@@ -32,6 +32,8 @@ class DataCleaner:
         summary["trends_sources_cleaned"] = self._clean_trends_sources(conn)
         summary["keywords_added"] = self._recategorize_other(conn)
         summary["techs_categorized"] = self._categorize_new_techs(conn)
+        summary["techs_flagged_ambiguous"] = self._flag_ambiguous_techs(conn)
+        summary["mentions_no_context_removed"] = self._remove_ambiguous_without_context(conn)
 
         conn.close()
         logger.info("Cleanup complete: %s", summary)
@@ -179,6 +181,40 @@ class DataCleaner:
                 count += 1
         conn.commit()
         return count
+
+    def _flag_ambiguous_techs(self, conn: psycopg.Connection[Any]) -> int:
+        result = conn.execute(
+            "UPDATE tech_names SET ambiguous = TRUE "
+            "WHERE ambiguous IS NULL "
+            "AND LENGTH(canonical_name) <= 8 "
+            "AND canonical_name ~ '^[A-Z][a-z]+$'"
+        )
+        count = result.rowcount or 0
+        conn.commit()
+        logger.info("Flagged %d new ambiguous tech names", count)
+        return count
+
+    def _remove_ambiguous_without_context(self, conn: psycopg.Connection[Any]) -> int:
+        from src.categorization.ner import extract_tech_names
+
+        rows = conn.execute(
+            "SELECT m.id, m.name, m.description FROM mentions m "
+            "JOIN tech_aliases ta ON ta.alias = LOWER(m.name) "
+            "JOIN tech_names tn ON ta.tech_id = tn.id "
+            "WHERE tn.ambiguous = TRUE"
+        ).fetchall()
+
+        to_delete = []
+        for r in rows:
+            extracted = extract_tech_names(r["description"] or "")
+            if r["name"].lower() not in {e.lower() for e in extracted}:
+                to_delete.append(r["id"])
+
+        if to_delete:
+            conn.execute("DELETE FROM mentions WHERE id = ANY(%s)", (to_delete,))
+            conn.commit()
+        logger.info("Removed %d ambiguous mentions without tech context", len(to_delete))
+        return len(to_delete)
 
 
 if __name__ == "__main__":
