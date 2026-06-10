@@ -53,10 +53,9 @@ class DataCleaner:
         return count
 
     def _merge_duplicate_mentions(self, conn: psycopg.Connection[Any]) -> int:
-        # Keep the row with the canonical display name for each duplicate URL
         result = conn.execute(
             "DELETE FROM mentions WHERE ctid NOT IN ("
-            "  SELECT DISTINCT ON (url) ctid FROM mentions ORDER BY url, name"
+            "  SELECT DISTINCT ON (name, url) ctid FROM mentions ORDER BY name, url, collected_at DESC"
             ")"
         )
         count = result.rowcount or 0
