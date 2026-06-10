@@ -29,12 +29,15 @@ class DatabaseGateway:
 
     def save_mentions(self, mentions: list[Mention]) -> int:
         """Insert mentions and return count saved."""
+        from src.categorization.display_names import to_display_name
+
         with self._connect() as conn:
             for m in mentions:
+                name = to_display_name(m.name)
                 conn.execute(
                     "INSERT INTO mentions (source, name, url, description, stars, forks, score) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (m.source, m.name, m.url, m.description, m.stars, m.forks, m.score),
+                    (m.source, name, m.url, m.description, m.stars, m.forks, m.score),
                 )
             conn.commit()
         logger.info("Saved %d mentions", len(mentions))
