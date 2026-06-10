@@ -12,8 +12,10 @@ class Predictions:
     async def get_all(self, limit: int = 10) -> list[dict[str, Any]]:
         rows = await (
             await self._conn.execute(
-                "SELECT name, confidence, signals, url, predicted_at "
-                "FROM predictions ORDER BY predicted_at DESC, confidence DESC LIMIT %s",
+                "SELECT p.name, p.confidence, p.signals, p.url, p.predicted_at "
+                "FROM predictions p "
+                "JOIN tech_aliases ta ON ta.alias = LOWER(p.name) "
+                "ORDER BY p.predicted_at DESC, p.confidence DESC LIMIT %s",
                 (limit,),
             )
         ).fetchall()

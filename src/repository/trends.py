@@ -12,11 +12,13 @@ class Trends:
     async def get_top(self, days: int = 7, limit: int = 10) -> list[dict[str, Any]]:
         rows = await (
             await self._conn.execute(
-                "SELECT name, SUM(mentions) as mentions, AVG(score) as score, "
-                "AVG(growth_pct) as growth_pct, array_agg(DISTINCT unnest_sources) as sources "
-                "FROM trends, unnest(sources) as unnest_sources "
-                "WHERE calculated_at > NOW() - make_interval(days => %s) "
-                "GROUP BY name ORDER BY score DESC LIMIT %s",
+                "SELECT t.name, SUM(t.mentions) as mentions, AVG(t.score) as score, "
+                "AVG(t.growth_pct) as growth_pct, array_agg(DISTINCT unnest_sources) as sources "
+                "FROM trends t "
+                "JOIN tech_aliases ta ON ta.alias = LOWER(t.name), "
+                "unnest(t.sources) as unnest_sources "
+                "WHERE t.calculated_at > NOW() - make_interval(days => %s) "
+                "GROUP BY t.name ORDER BY score DESC LIMIT %s",
                 (days, limit),
             )
         ).fetchall()
@@ -62,7 +64,11 @@ class Trends:
 
     async def get_names(self) -> list[str]:
         rows = await (
-            await self._conn.execute("SELECT DISTINCT name FROM trends ORDER BY name")
+            await self._conn.execute(
+                "SELECT DISTINCT t.name FROM trends t "
+                "JOIN tech_aliases ta ON ta.alias = LOWER(t.name) "
+                "ORDER BY t.name"
+            )
         ).fetchall()
         return [r["name"] for r in rows]
 
