@@ -17,8 +17,11 @@ def analyze_sentiment(mention: Mention) -> float:
 
 
 def average_sentiment(mentions: list[Mention]) -> float:
-    """Return average sentiment across mentions."""
+    """Return average sentiment across mentions, excluding neutral/factual text."""
     if not mentions:
         return 0.0
-    total = sum(analyze_sentiment(m) for m in mentions)
-    return round(total / len(mentions), 3)
+    scores = [analyze_sentiment(m) for m in mentions]
+    opinionated = [s for s in scores if s != 0.0]
+    if not opinionated:
+        return 0.0
+    return round(sum(opinionated) / len(opinionated), 3)
