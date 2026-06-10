@@ -156,6 +156,7 @@ async def get_trend_detail(
             "SELECT t2.name, AVG(t2.score) as score "
             "FROM trends t1 "
             "JOIN trends t2 ON t2.calculated_at = t1.calculated_at AND t2.name != t1.name "
+            "JOIN tech_aliases ta ON ta.alias = LOWER(t2.name) "
             "WHERE LOWER(t1.name) = LOWER(%s) "
             "GROUP BY t2.name ORDER BY score DESC LIMIT 5",
             (resolved_name,),
