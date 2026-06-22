@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from src.categorization.normalizer import normalize
+from src.categorization.stopwords import is_valid_tech_name
 from src.infra.logger import Logger
 from src.models import Mention
 
@@ -89,6 +90,8 @@ class TrendPredictor:
         predictions: list[TrendPrediction] = []
 
         for f in features:
+            if not is_valid_tech_name(f.name):
+                continue
             score = self._score_features(f)
             predictions.append(TrendPrediction(name=f.name, will_trend_score=score, features=f))
 

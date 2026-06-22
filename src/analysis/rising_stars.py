@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from src.categorization.normalizer import normalize
+from src.categorization.stopwords import is_valid_tech_name
 from src.models import Mention
 
 
@@ -53,9 +54,12 @@ class RisingStarDetector:
             confidence = min(confidence, 1.0)
             if confidence >= self._min_confidence and signals:
                 best = next((m for m in current if normalize(m.name) == name), None)
+                display_name = best.name if best else name
+                if not is_valid_tech_name(display_name):
+                    continue
                 stars.append(
                     RisingStar(
-                        name=best.name if best else name,
+                        name=display_name,
                         confidence=round(confidence, 2),
                         signals=signals,
                         url=best.url if best else "",

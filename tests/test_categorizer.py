@@ -23,13 +23,13 @@ def test_rising_star_new_multi_source() -> None:
     detector = RisingStarDetector(min_confidence=0.3)
     previous: list[Mention] = []
     current = [
-        Mention(source="github", name="NewTool", url="http://x", description=""),
-        Mention(source="hackernews", name="NewTool", url="http://x", description=""),
-        Mention(source="devto", name="NewTool", url="http://x", description=""),
+        Mention(source="github", name="Bun", url="http://x", description=""),
+        Mention(source="hackernews", name="Bun", url="http://x", description=""),
+        Mention(source="devto", name="Bun", url="http://x", description=""),
     ]
     stars = detector.detect(current, previous)
     assert len(stars) == 1
-    assert stars[0].name == "NewTool"
+    assert stars[0].name == "Bun"
     assert stars[0].confidence >= 0.5
 
 

@@ -34,6 +34,7 @@ class DataCleaner:
         summary["techs_categorized"] = self._categorize_new_techs(conn)
         summary["techs_flagged_ambiguous"] = self._flag_ambiguous_techs(conn)
         summary["mentions_no_context_removed"] = self._remove_ambiguous_without_context(conn)
+        summary["invalid_predictions_removed"] = self._remove_invalid_tech_predictions(conn)
 
         conn.close()
         logger.info("Cleanup complete: %s", summary)
@@ -213,6 +214,17 @@ class DataCleaner:
             conn.execute("DELETE FROM mentions WHERE id = ANY(%s)", (to_delete,))
             conn.commit()
         logger.info("Removed %d ambiguous mentions without tech context", len(to_delete))
+        return len(to_delete)
+
+    def _remove_invalid_tech_predictions(self, conn: psycopg.Connection[Any]) -> int:
+        from src.categorization.stopwords import is_valid_tech_name
+
+        rows = conn.execute("SELECT id, name FROM predictions").fetchall()
+        to_delete = [r["id"] for r in rows if not is_valid_tech_name(r["name"])]
+        if to_delete:
+            conn.execute("DELETE FROM predictions WHERE id = ANY(%s)", (to_delete,))
+            conn.commit()
+        logger.info("Removed %d invalid tech predictions", len(to_delete))
         return len(to_delete)
 
 

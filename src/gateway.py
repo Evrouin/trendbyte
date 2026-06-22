@@ -87,14 +87,16 @@ class DatabaseGateway:
 
     def get_weekly_trends(self, limit: int = 5) -> list[dict[str, Any]]:
         """Get top trends from the past 7 days aggregated by mentions."""
+        from src.categorization.stopwords import is_valid_tech_name
+
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT name, SUM(mentions) as mentions, AVG(score) as score "
                 "FROM trends WHERE calculated_at > NOW() - INTERVAL '7 days' "
                 "GROUP BY name ORDER BY mentions DESC LIMIT %s",
-                (limit,),
+                (limit * 3,),
             ).fetchall()
-        return [dict(row) for row in rows]
+        return [dict(row) for row in rows if is_valid_tech_name(row["name"])][:limit]
 
     def get_recent_post_ids(self, days: int = 7) -> list[str]:
         """Get tweet IDs from the last N days."""
